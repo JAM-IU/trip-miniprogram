@@ -1,0 +1,90 @@
+/* 胶囊浮层导航 */
+.tabbar {
+  position: fixed;
+  left: 24rpx;
+  right: 24rpx;
+  bottom: calc(20rpx + env(safe-area-inset-bottom));
+  height: 132rpx;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1rpx solid rgba(20, 26, 41, 0.06);
+  border-radius: 999rpx;
+  box-shadow: 0 16rpx 44rpx rgba(31, 41, 55, 0.16);
+  display: flex;
+  align-items: center;
+  padding: 0 24rpx;
+  box-sizing: border-box;
+  transition: transform 0.28s ease, opacity 0.28s ease;
+  z-index: 50;
+}
+
+/* 下滑时收起 */
+.tabbar.hide {
+  transform: translateY(calc(100% + 60rpx));
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tabbar.dark {
+  background: rgba(24, 30, 46, 0.82);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 16rpx 44rpx rgba(0, 0, 0, 0.4);
+}
+
+.tab-item {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+}
+
+.tab-icon {
+  width: 84rpx;
+  height: 84rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 42rpx;
+  transition: all 0.2s ease;
+}
+
+.tab-icon.on {
+  background: linear-gradient(135deg, #4F8CFF, #3E75E8);
+  box-shadow: 0 6rpx 18rpx rgba(79, 140, 255, 0.4);
+}
+
+.tabbar.dark .tab-icon.on {
+  background: linear-gradient(135deg, #75B7FF, #4A7FD0);
+}
+
+.tab-emoji {
+  line-height: 1;
+}
+
+/* 未选中：图标变灰降饱和 */
+.tab-icon:not(.on) .tab-emoji {
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+
+.tab-text {
+  font-size: 20rpx;
+  color: #9BA3AF;
+  transition: color 0.2s ease;
+}
+
+.tab-text.on {
+  color: #4F8CFF;
+  font-weight: 700;
+}
+
+.tabbar.dark .tab-text {
+  color: #8A93A6;
+}
+
+.tabbar.dark .tab-text.on {
+  color: #75B7FF;
+}

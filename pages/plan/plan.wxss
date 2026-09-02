@@ -1,5 +1,5 @@
 .page {
-  padding: 24rpx 24rpx 260rpx;
+  padding: 24rpx 24rpx 320rpx;
   min-height: 100vh;
   background: var(--bg);
   box-sizing: border-box;
@@ -471,7 +471,7 @@
 .big-add {
   position: fixed;
   right: 28rpx;
-  bottom: calc(48rpx + env(safe-area-inset-bottom));
+  bottom: calc(196rpx + env(safe-area-inset-bottom));
   width: 112rpx;
   height: 112rpx;
   border-radius: 50%;
@@ -501,7 +501,7 @@
 .float-tools {
   position: fixed;
   right: 40rpx;
-  bottom: calc(188rpx + env(safe-area-inset-bottom));
+  bottom: calc(340rpx + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   gap: 20rpx;

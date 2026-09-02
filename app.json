@@ -12,12 +12,14 @@
     "backgroundTextStyle": "dark"
   },
   "tabBar": {
+    "custom": true,
     "color": "#8993A6",
     "selectedColor": "#4F8CFF",
     "backgroundColor": "#FFFFFF",
     "borderStyle": "white",
     "list": [
       { "pagePath": "pages/plan/plan", "text": "行程" },
+      { "pagePath": "pages/group/group", "text": "行程组" },
       { "pagePath": "pages/photos/photos", "text": "照片墙" }
     ]
   },

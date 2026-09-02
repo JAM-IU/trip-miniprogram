@@ -111,10 +111,9 @@
     <view class="empty-seed" bindtap="onSeedSample">或点此载入「滇西北示例行程」</view>
   </view>
 
-  <!-- 悬浮工具：主题 + 行程组 -->
+  <!-- 悬浮工具：主题（行程组入口在底部 dock 栏） -->
   <view class="float-tools {{barHidden ? 'fab-hide' : ''}}">
     <view class="ft-btn" bindtap="onCycleTheme">{{themeIcon}}</view>
-    <view class="ft-btn" bindtap="onOpenGroup">⇄</view>
   </view>
 
   <view class="big-add {{barHidden ? 'fab-hide' : ''}}" bindtap="onAddItem" data-day="1">

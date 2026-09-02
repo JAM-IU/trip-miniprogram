@@ -20,11 +20,16 @@ Page({
 
   onShow() {
     this.setData({ theme: getApp().globalData.theme })
-    getApp().syncTabBar()
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      this.getTabBar().setData({ selected: 2, theme: getApp().globalData.theme })
+    }
   },
 
   // 系统主题变化时由 app.js 调用
   applyTheme(theme) {
     this.setData({ theme: theme })
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      this.getTabBar().setData({ theme: theme })
+    }
   }
 })

@@ -150,7 +150,7 @@ Page({
 
   onShow() {
     this.setData({ theme: getApp().globalData.theme, themeIcon: themeIcon() })
-    getApp().syncTabBar()
+    this.syncTabBar(0)
     scrollHide.reset(this)
     const gid = dbUtil.gid()
     if (!gid) {
@@ -174,6 +174,16 @@ Page({
   // 系统主题变化时由 app.js 调用
   applyTheme(theme) {
     this.setData({ theme: theme })
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      this.getTabBar().setData({ theme: theme })
+    }
+  },
+
+  // 同步自定义 dock 栏：选中态 + 主题
+  syncTabBar(selected) {
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      this.getTabBar().setData({ selected: selected, theme: getApp().globalData.theme })
+    }
   },
 
   // ===== 行程组 =====
@@ -217,10 +227,6 @@ Page({
         wx.reLaunch({ url: '/pages/group/group' })
       }
     }
-  },
-
-  onOpenGroup() {
-    wx.navigateTo({ url: '/pages/group/group' })
   },
 
   // 主题：跟随系统 → 白天 → 夜间 → 跟随系统

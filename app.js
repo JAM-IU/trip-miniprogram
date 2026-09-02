@@ -97,15 +97,14 @@ App({
     this.syncTabBar(theme)
   },
 
-  // 同步底部 dock 栏配色（双主题）；tabBar 未就绪时静默失败，tab 页 onShow 会补调
+  // 同步自定义 dock 栏主题；当前页是 tab 页时直接改组件数据
   syncTabBar(theme) {
-    const isDark = (theme || this.globalData.theme) === 'dark'
-    wx.setTabBarStyle({
-      color: isDark ? '#8A93A6' : '#8993A6',
-      selectedColor: isDark ? '#75B7FF' : '#4F8CFF',
-      backgroundColor: isDark ? '#0F1420' : '#FFFFFF',
-      borderStyle: isDark ? 'black' : 'white',
-      fail: function () {}
-    })
+    const t = theme || this.globalData.theme
+    const pages = getCurrentPages()
+    const cur = pages[pages.length - 1]
+    if (cur && typeof cur.getTabBar === 'function') {
+      const tab = cur.getTabBar()
+      if (tab) tab.setData({ theme: t })
+    }
   }
 })

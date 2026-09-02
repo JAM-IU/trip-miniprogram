@@ -28,10 +28,16 @@ Page({
       gid: dbUtil.gid(),
       myGroups: wx.getStorageSync('groupList') || []
     })
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      this.getTabBar().setData({ selected: 1, theme: getApp().globalData.theme })
+    }
   },
 
   applyTheme(theme) {
     this.setData({ theme: theme })
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      this.getTabBar().setData({ theme: theme })
+    }
   },
 
   onFormName(e) { this.setData({ 'form.name': e.detail.value }) },
@@ -81,7 +87,7 @@ Page({
     wx.setStorageSync('groupList', list)
     wx.hideLoading()
     this.setData({ busy: false })
-    wx.reLaunch({ url: '/pages/plan/plan' })
+    wx.switchTab({ url: '/pages/plan/plan' })
   },
 
   async onCreate() {
@@ -223,7 +229,7 @@ Page({
   },
 
   onEnterPlan() {
-    wx.reLaunch({ url: '/pages/plan/plan' })
+    wx.switchTab({ url: '/pages/plan/plan' })
   },
 
   noop() {}
