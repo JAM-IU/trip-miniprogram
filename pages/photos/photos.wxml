@@ -1,0 +1,32 @@
+<view class="page {{theme === 'dark' ? 'theme-dark' : ''}}">
+
+  <view class="ph-hero anim-pop">
+    <view class="ph-hero-deco">📷</view>
+    <view class="ph-hero-title">旅行照片墙</view>
+    <view class="ph-hero-badge">敬请期待</view>
+    <view class="ph-hero-sub">同组伙伴的旅行照片，将在这里拼成一面回忆墙</view>
+  </view>
+
+  <!-- 占位照片墙 -->
+  <view class="ph-grid">
+    <view class="ph-cell anim-in" wx:for="{{frames}}" wx:key="label" style="animation-delay: {{index * 70}}ms">
+      <view class="ph-cell-icon">{{item.icon}}</view>
+      <view class="ph-cell-label">{{item.label}}</view>
+    </view>
+  </view>
+
+  <!-- 上线后会有 -->
+  <view class="ph-card anim-in" style="animation-delay: 480ms">
+    <view class="ph-card-title">上线后会有</view>
+    <view class="ph-feat" wx:for="{{features}}" wx:key="title">
+      <view class="ph-feat-icon">{{item.icon}}</view>
+      <view class="ph-feat-body">
+        <view class="ph-feat-title">{{item.title}}</view>
+        <view class="ph-feat-desc">{{item.desc}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="ph-foot anim-in" style="animation-delay: 560ms">服务器筹备中，下次旅行见 🚗</view>
+
+</view>

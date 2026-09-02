@@ -63,11 +63,21 @@ function isPermError(e) {
 }
 
 /**
- * 统一的数据库错误弹窗：显示具体原因，权限问题附修复方法
+ * 是否像"集合不存在"错误
+ */
+function isNoCollectionError(e) {
+  var t = errText(e)
+  return /not exist|not found|collection.*-501000|-501000/i.test(t)
+}
+
+/**
+ * 统一的数据库错误弹窗：显示具体原因，常见问题附修复方法
  */
 function showDbError(title, e) {
   var content = errText(e)
-  if (isPermError(e)) {
+  if (isNoCollectionError(e)) {
+    content += '\n\n这是集合没建导致的，修复方法：\n微信开发者工具 → 云开发 → 数据库 → 「+」创建集合，依次创建 3 个（全小写）：\ntrips / checklist / groups\n\n建完每个集合还要设权限：点进集合 → 权限设置 → 自定义安全规则，粘贴：\n{"read": true, "write": true}'
+  } else if (isPermError(e)) {
     content += '\n\n这是数据库权限问题，修复方法：\n微信开发者工具 → 云开发 → 数据库 → 点进对应集合 → 权限设置(数据权限) → 自定义安全规则，粘贴：\n{"read": true, "write": true}\n\n三个集合 trips / checklist / groups 都要设置，改完点保存/发布。'
   }
   wx.showModal({

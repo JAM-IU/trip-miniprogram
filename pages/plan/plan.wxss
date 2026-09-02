@@ -817,6 +817,23 @@
   flex-shrink: 0;
 }
 
+.pk-entry-sub {
+  font-size: 24rpx;
+  color: var(--sub);
+}
+
+.pk-entry-soon {
+  font-size: 20rpx;
+  font-weight: 800;
+  letter-spacing: 2rpx;
+  color: var(--gold-deep);
+  background: var(--gold-soft);
+  border: 1rpx solid var(--gold);
+  border-radius: 99rpx;
+  padding: 4rpx 18rpx;
+  flex-shrink: 0;
+}
+
 /* ===== 携带清单弹层 ===== */
 .pk-sheet {
   max-height: 86vh;

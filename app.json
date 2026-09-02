@@ -1,7 +1,8 @@
 {
   "pages": [
     "pages/plan/plan",
-    "pages/group/group"
+    "pages/group/group",
+    "pages/photos/photos"
   ],
   "window": {
     "navigationBarBackgroundColor": "#F7F8FC",

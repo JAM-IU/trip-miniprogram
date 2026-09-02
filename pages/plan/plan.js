@@ -222,6 +222,11 @@ Page({
     wx.navigateTo({ url: '/pages/group/group' })
   },
 
+  // 照片墙占位页
+  onOpenPhotos() {
+    wx.navigateTo({ url: '/pages/photos/photos' })
+  },
+
   // 主题：跟随系统 → 白天 → 夜间 → 跟随系统
   onCycleTheme() {
     const saved = wx.getStorageSync('theme')
