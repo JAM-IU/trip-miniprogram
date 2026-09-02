@@ -1,8 +1,9 @@
-// 天气云函数：抓取 wttr.in（免费、无需 key），返回三地当日天气
+// 天气云函数：抓取 wttr.in（免费、无需 key），返回行程组各城市当日天气
 // 云函数内发起外部请求不受小程序「合法域名」限制
 const https = require('https')
 
-const CITIES = [
+// 默认城市（滇西北模板）；调用方可传 event.cities = ['城市名', ...] 覆盖
+const DEFAULT_CITIES = [
   { name: '大理', q: 'Dali,Yunnan' },
   { name: '丽江', q: 'Lijiang,Yunnan' },
   { name: '香格里拉', q: 'Shangri-La,Yunnan' }
@@ -40,7 +41,15 @@ function fetchCity(city) {
   })
 }
 
-exports.main = async function () {
-  const list = await Promise.all(CITIES.map(fetchCity))
+exports.main = async function (event) {
+  let cities = DEFAULT_CITIES
+  if (event && Array.isArray(event.cities) && event.cities.length) {
+    cities = event.cities
+      .filter(function (n) { return typeof n === 'string' && n.trim() })
+      .slice(0, 5)
+      .map(function (n) { return { name: n.trim(), q: n.trim() } })
+    if (!cities.length) cities = DEFAULT_CITIES
+  }
+  const list = await Promise.all(cities.map(fetchCity))
   return { list: list.filter(Boolean), at: Date.now() }
 }

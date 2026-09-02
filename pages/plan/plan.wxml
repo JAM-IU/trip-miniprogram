@@ -5,18 +5,18 @@
     <view class="hero-mask"></view>
     <view class="hero-content">
       <view class="hero-deco">🏔️</view>
-      <view class="hero-title">大理 · 丽江 · 香格里拉</view>
-      <view class="hero-sub">滇西北自驾环线</view>
-      <view class="hero-badge">9.7 — 9.13 · 7天6晚</view>
+      <view class="hero-title">{{heroTitle}}</view>
+      <view class="hero-sub" wx:if="{{heroSub}}">{{heroSub}}</view>
+      <view class="hero-badge" wx:if="{{heroBadge}}">{{heroBadge}}</view>
     </view>
   </view>
 
   <!-- 出发倒计时卡 -->
   <view class="cd-card anim-in" wx:if="{{countdown}}">
-    <view class="cd-num" wx:if="{{countdown.mode === 'before'}}">{{countdown.days}}</view>
+    <view class="cd-num" wx:if="{{countdown.mode === 'before' && countdown.days}}">{{countdown.days}}</view>
     <view class="cd-emoji" wx:else>{{countdown.mode === 'during' ? '🚗' : '🎉'}}</view>
     <view class="cd-body">
-      <view class="cd-title">{{countdown.title}}<text wx:if="{{countdown.mode === 'before'}}"> 天</text></view>
+      <view class="cd-title">{{countdown.title}}<text wx:if="{{countdown.mode === 'before' && countdown.days}}"> 天</text></view>
       <view class="cd-sub">{{countdown.sub}}</view>
       <view class="cd-dots">
         <view class="cd-dot {{item ? 'cd-dot-on' : ''}}" wx:for="{{countdown.dots}}" wx:key="index"></view>
@@ -58,7 +58,7 @@
   </view>
 
   <view wx:if="{{loading && !days.length}}" class="loading-box">
-    加载中…首次打开自动初始化行程
+    加载中…
   </view>
 
   <view class="day-card anim-in" id="day-{{d.day}}" wx:for="{{days}}" wx:key="day" wx:for-item="d"
@@ -88,7 +88,7 @@
           <view class="stop-content">
             <view class="stop-title">
               <text>{{s.title}}</text>
-              <text wx:if="{{s.fee}}" class="fee {{s.fee === '免费' ? 'fee-free' : 'fee-pay'}}">{{s.fee}}{{s.payer ? ' · ' + s.payer + '付' : ''}}</text>
+              <text wx:if="{{s.fee}}" class="fee {{s.fee === '免费' ? 'fee-free' : 'fee-pay'}}">{{s.fee}}</text>
             </view>
             <view class="stop-desc" wx:if="{{s.time || s.desc}}">
               <text wx:if="{{s.time}}" class="stop-time">{{s.time}}</text>
@@ -106,7 +106,15 @@
   </view>
 
   <view wx:if="{{!loading && !days.length}}" class="empty-box">
-    暂无行程，点下方按钮添加第一条
+    <view>🗺️</view>
+    <view>暂无行程，点右下角按钮添加第一条</view>
+    <view class="empty-seed" bindtap="onSeedSample">或点此载入「滇西北示例行程」</view>
+  </view>
+
+  <!-- 悬浮工具：主题 + 行程组 -->
+  <view class="float-tools {{barHidden ? 'fab-hide' : ''}}">
+    <view class="ft-btn" bindtap="onCycleTheme">{{themeIcon}}</view>
+    <view class="ft-btn" bindtap="onOpenGroup">⇄</view>
   </view>
 
   <view class="big-add {{barHidden ? 'fab-hide' : ''}}" bindtap="onAddItem" data-day="1">
@@ -155,25 +163,9 @@
       </view>
 
       <view class="frow">
-        <text class="flabel">金额(元)</text>
-        <input class="finput" type="digit" value="{{form.amount}}" bindinput="onFormAmount"
-               placeholder="不记账可留空，如 45" placeholder-class="ph" />
-      </view>
-
-      <view class="frow">
-        <text class="flabel">谁付的</text>
-        <picker mode="selector" range="{{payerNames}}" value="{{form.payerIdx}}" bindchange="onFormPayer">
-          <view class="fpick">{{payerNames[form.payerIdx] || '不记账'}}</view>
-        </picker>
-      </view>
-
-      <view class="frow fcol" wx:if="{{form.payerIdx > 0 && form.amount}}">
-        <text class="flabel">参与平摊（已选 {{form.memberSel.length}} 人）</text>
-        <checkbox-group class="cb-group" bindchange="onFormMembers">
-          <label class="cb {{item.checked ? 'cb-on' : ''}}" wx:for="{{cbMembers}}" wx:key="_id">
-            <checkbox value="{{item.name}}" checked="{{item.checked}}" />{{item.name}}
-          </label>
-        </checkbox-group>
+        <text class="flabel">费用说明</text>
+        <input class="finput" value="{{form.fee}}" bindinput="onFormFee"
+               placeholder="如 免费 / 约45元（可不填）" placeholder-class="ph" />
       </view>
 
       <view class="frow">
@@ -202,7 +194,7 @@
   <view class="mask" wx:if="{{pack.show}}" bindtap="onClosePack">
     <view class="sheet pk-sheet" catchtap="noop">
       <view class="sheet-title">🎒 携带清单 · {{pack.doneCount}}/{{pack.totalCount}}</view>
-      <view class="pk-tip">点一下打勾，长按删除。9月高原早晚冷、紫外线强，厚外套和防晒必带。</view>
+      <view class="pk-tip">点一下打勾，长按删除。高原早晚冷、紫外线强，厚外套和防晒别落下。</view>
 
       <scroll-view class="pk-scroll" scroll-y enhanced="true" show-scrollbar="{{false}}">
         <view class="pk-group" wx:for="{{pack.groups}}" wx:key="key" wx:for-item="g">

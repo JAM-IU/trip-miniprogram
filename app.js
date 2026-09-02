@@ -78,7 +78,7 @@ App({
     return mode
   },
 
-  // 同步导航栏 / 背景 / tab 栏配色
+  // 同步导航栏 / 背景配色
   applyChrome(theme) {
     const isDark = theme === 'dark'
     // 外观颜色
@@ -93,14 +93,5 @@ App({
       backgroundColor: isDark ? '#0F1420' : '#F7F8FC',
       animation: { duration: 200, timingFunc: 'easeIn' }
     })
-    // tab 栏
-    if (wx.setTabBarStyle) {
-      wx.setTabBarStyle({
-        color: isDark ? '#8A93A6' : '#9BA3AF',
-        selectedColor: isDark ? '#F5C46A' : '#4F8CFF',
-        backgroundColor: isDark ? '#121826' : '#ffffff',
-        borderStyle: isDark ? 'black' : 'white'
-      })
-    }
   }
 })

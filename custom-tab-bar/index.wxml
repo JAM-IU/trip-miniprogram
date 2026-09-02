@@ -1,9 +1,0 @@
-<view class="tabbar {{theme === 'dark' ? 'dark' : ''}} {{hidden ? 'hide' : ''}}">
-  <view class="tab-item" wx:for="{{list}}" wx:key="pagePath"
-        data-path="{{item.pagePath}}" data-index="{{index}}" bindtap="switchTab">
-    <view class="tab-icon {{selected === index ? 'on' : ''}}">
-      <text class="tab-emoji">{{item.icon}}</text>
-    </view>
-    <text class="tab-text {{selected === index ? 'on' : ''}}">{{item.text}}</text>
-  </view>
-</view>

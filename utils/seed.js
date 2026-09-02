@@ -1,4 +1,4 @@
-// 行程初始数据 + 首次打开自动初始化
+// 行程初始数据 + 行程组相关的初始化工具
 const dbUtil = require('./db')
 const db = dbUtil.db
 
@@ -9,6 +9,7 @@ const DAY_THEMES = {
   5: 'shangrila', 6: 'shangrila', 7: 'shangrila'
 }
 
+// 滇西北模板专用的日标签（迁入既有行程数据的组沿用）
 const DAY_LABELS = [
   'D1 · 抵达大理',
   'D2 · 环洱海 + 喜洲',
@@ -19,11 +20,45 @@ const DAY_LABELS = [
   'D7 · 梅里 / 返程'
 ]
 
-const DATE_LABELS = ['9/7 周日', '9/8 周一', '9/9 周二', '9/10 周三', '9/11 周四', '9/12 周五', '9/13 周六']
+const WEEK_CN = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
 
-const EXP_DATES = ['9/7', '9/8', '9/9', '9/10', '9/11', '9/12', '9/13']
+// 解析 '2026-09-07' 为本地零点时间戳
+function parseDay(str) {
+  const m = (str || '').match(/(\d{4})-(\d{1,2})-(\d{1,2})/)
+  if (!m) return null
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).getTime()
+}
 
-// 初始行程（level: must必去 / rec推荐 / opt可选；lat/lng 用于一键导航）
+// 由出发日期生成每天的日期标签：['9/7 周日', ...]
+function dateLabels(startDate, totalDays) {
+  const start = parseDay(startDate)
+  const arr = []
+  for (let i = 0; i < totalDays; i++) {
+    if (!start) { arr.push(''); continue }
+    const d = new Date(start + i * 86400000)
+    arr.push((d.getMonth() + 1) + '/' + d.getDate() + ' ' + WEEK_CN[d.getDay()])
+  }
+  return arr
+}
+
+// 通用日标签：['D1', 'D2', ...]
+function dayLabels(totalDays) {
+  const arr = []
+  for (let i = 0; i < totalDays; i++) arr.push('D' + (i + 1))
+  return arr
+}
+
+// 顶部横幅徽章文字：'9.7 — 9.13 · 7天6晚'
+function rangeBadge(startDate, totalDays) {
+  const start = parseDay(startDate)
+  if (!start || !totalDays) return ''
+  const s = new Date(start)
+  const e = new Date(start + (totalDays - 1) * 86400000)
+  const f = function (d) { return (d.getMonth() + 1) + '.' + d.getDate() }
+  return f(s) + ' — ' + f(e) + ' · ' + totalDays + '天' + Math.max(0, totalDays - 1) + '晚'
+}
+
+// 初始行程模板（level: must必去 / rec推荐 / opt可选；lat/lng 用于一键导航）
 const seedTrips = [
   { day: 1, date: '9/7 周日', time: '16:40', title: '落地大理机场', desc: '机场直接取租车，开启自驾', level: 'must', fee: '免费', order: 100, lat: 25.6494, lng: 100.3194 },
   { day: 1, date: '9/7 周日', time: '傍晚', title: '入住酒店', desc: '建议住大理古城或洱海边', level: 'rec', fee: '', order: 101 },
@@ -56,29 +91,29 @@ const seedTrips = [
   { day: 7, date: '9/13 周六', time: '', title: '返程', desc: '香格里拉或丽江机场还车返程', level: 'must', fee: '', order: 701 }
 ]
 
-// 标题 -> 坐标（给已初始化的老数据回填导航点用）
+// 标题 -> 坐标（给老数据回填导航点用）
 const SPOT_COORDS = {}
 seedTrips.forEach(function (t) {
   if (t.lat && t.lng) SPOT_COORDS[t.title] = { lat: t.lat, lng: t.lng }
 })
 
 /**
- * 首次打开自动写入行程（幂等：用固定 _id，重复写入会失败并跳过，
- * 两个人同时首次打开也不会产生重复数据）
+ * 给当前行程组载入滇西北示例行程（幂等：_id 含 gid，重复载入会跳过）
  */
-async function initIfEmpty() {
-  const res = await db.collection('trips').count()
-  if (res.total > 0) return false
+async function seedSampleTrips(gid) {
+  if (!gid) return 0
+  let added = 0
   for (let i = 0; i < seedTrips.length; i++) {
     try {
       await db.collection('trips').add({
-        data: Object.assign({ _id: 'seed-' + (i + 1) }, seedTrips[i])
+        data: Object.assign({ _id: 'seed-' + gid + '-' + (i + 1), gid: gid }, seedTrips[i])
       })
+      added++
     } catch (e) {
-      // 已被别人初始化过，跳过
+      // 已载入过，跳过
     }
   }
-  return true
+  return added
 }
 
 // ===== 携带清单 =====
@@ -122,22 +157,48 @@ const PACK_SEED = [
   { cat: 'misc', text: '便携氧气瓶（香格里拉备用）' }
 ]
 
+// 新行程组的通用清单（不含地域/季节特定项）
+const PACK_GENERIC = [
+  { cat: 'id', text: '身份证' },
+  { cat: 'id', text: '驾驶证（自驾必带）' },
+  { cat: 'id', text: '少量现金' },
+  { cat: 'cloth', text: '换洗衣物' },
+  { cat: 'cloth', text: '舒适徒步鞋' },
+  { cat: 'cloth', text: '外套（早晚温差）' },
+  { cat: 'care', text: '防晒霜' },
+  { cat: 'care', text: '个人洗漱用品' },
+  { cat: 'med', text: '感冒药' },
+  { cat: 'med', text: '肠胃药' },
+  { cat: 'med', text: '创可贴' },
+  { cat: 'digital', text: '充电宝' },
+  { cat: 'digital', text: '车载充电器' },
+  { cat: 'digital', text: '数据线' },
+  { cat: 'misc', text: '保温杯' },
+  { cat: 'misc', text: '雨伞 / 雨衣' },
+  { cat: 'misc', text: '零食干粮（路上补给）' }
+]
+
 /**
- * 首次打开自动写入携带清单（固定 _id 幂等）
+ * 行程组清单为空时写入初始清单（固定 _id 幂等）
+ * @param {string} gid 行程组 id
+ * @param {boolean} full true=滇西北完整清单 false=通用清单
  * 注意：checklist 集合不存在时会抛错，调用方需自行兜底（本地模式）
  */
-async function initPackIfEmpty() {
-  const res = await db.collection('checklist').count()
+async function initPackIfEmpty(gid, full) {
+  if (!gid) return false
+  const res = await db.collection('checklist').where({ gid: gid }).count()
   if (res.total > 0) return false
-  for (let i = 0; i < PACK_SEED.length; i++) {
+  const src = full ? PACK_SEED : PACK_GENERIC
+  for (let i = 0; i < src.length; i++) {
     try {
       await db.collection('checklist').add({
         data: Object.assign({
-          _id: 'pack-' + (i + 1),
+          _id: 'pack-' + gid + '-' + (i + 1),
+          gid: gid,
           done: false,
           order: (i + 1) * 10,
           createdAt: Date.now()
-        }, PACK_SEED[i])
+        }, src[i])
       })
     } catch (e) {
       // 已被别人初始化过，跳过
@@ -147,12 +208,14 @@ async function initPackIfEmpty() {
 }
 
 module.exports = {
-  initIfEmpty: initIfEmpty,
+  seedSampleTrips: seedSampleTrips,
   initPackIfEmpty: initPackIfEmpty,
+  dateLabels: dateLabels,
+  dayLabels: dayLabels,
+  rangeBadge: rangeBadge,
+  parseDay: parseDay,
   DAY_THEMES: DAY_THEMES,
   DAY_LABELS: DAY_LABELS,
-  DATE_LABELS: DATE_LABELS,
-  EXP_DATES: EXP_DATES,
   SPOT_COORDS: SPOT_COORDS,
   PACK_CATS: PACK_CATS,
   PACK_SEED: PACK_SEED

@@ -1,0 +1,160 @@
+.page {
+  padding: 24rpx 24rpx calc(60rpx + env(safe-area-inset-bottom));
+  min-height: 100vh;
+  background: var(--bg);
+  box-sizing: border-box;
+}
+
+/* ===== 顶部 ===== */
+.g-hero {
+  text-align: center;
+  padding: 70rpx 0 44rpx;
+}
+
+.g-hero-deco {
+  font-size: 72rpx;
+  margin-bottom: 8rpx;
+}
+
+.g-hero-title {
+  font-size: 44rpx;
+  font-weight: 800;
+  letter-spacing: 4rpx;
+  color: var(--text);
+}
+
+.g-hero-sub {
+  font-size: 24rpx;
+  color: var(--sub);
+  margin-top: 10rpx;
+  letter-spacing: 1rpx;
+}
+
+/* ===== 卡片 ===== */
+.g-card {
+  background: var(--card);
+  border: 1rpx solid var(--card-border);
+  border-radius: 32rpx;
+  padding: 28rpx 32rpx 32rpx;
+  margin-bottom: 28rpx;
+  box-shadow: var(--card-shadow);
+}
+
+.g-card-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8rpx;
+  letter-spacing: 1rpx;
+}
+
+.g-tip {
+  font-size: 22rpx;
+  color: var(--weak);
+  margin-top: 16rpx;
+  line-height: 1.6;
+}
+
+/* ===== 行程组列表 ===== */
+.g-group {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 22rpx 0;
+  border-bottom: 1rpx solid var(--divider);
+}
+
+.g-group:last-of-type {
+  border-bottom: none;
+}
+
+.g-group:active {
+  opacity: 0.75;
+}
+
+.g-group-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.g-group-name {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.g-cur {
+  font-size: 20rpx;
+  font-weight: 600;
+  color: var(--green);
+  background: var(--green-soft);
+  padding: 4rpx 16rpx;
+  border-radius: 99rpx;
+}
+
+.g-group-code {
+  font-size: 22rpx;
+  color: var(--sub);
+  margin-top: 4rpx;
+  letter-spacing: 1rpx;
+}
+
+.g-copy {
+  font-size: 24rpx;
+  color: var(--primary);
+  background: var(--primary-soft);
+  padding: 10rpx 28rpx;
+  border-radius: 99rpx;
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.g-copy:active {
+  opacity: 0.7;
+}
+
+/* ===== 加入 ===== */
+.g-join-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 12rpx;
+}
+
+.g-join-input {
+  letter-spacing: 6rpx;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.g-join-btn {
+  background: linear-gradient(135deg, var(--primary), var(--primary-deep));
+  color: #fff;
+  padding: 14rpx 44rpx;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  flex-shrink: 0;
+  box-shadow: 0 4rpx 12rpx rgba(62, 117, 232, 0.25);
+}
+
+.g-join-btn:active {
+  opacity: 0.75;
+  transform: scale(0.98);
+}
+
+/* ===== 返回当前行程 ===== */
+.g-enter {
+  text-align: center;
+  color: var(--primary);
+  font-size: 28rpx;
+  font-weight: 600;
+  padding: 30rpx 0 10rpx;
+}
+
+.g-enter:active {
+  opacity: 0.7;
+}

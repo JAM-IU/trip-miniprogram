@@ -4,20 +4,23 @@ const db = wx.cloud.database()
 const MAX = 20
 
 /**
- * 分页拉取整个集合
+ * 分页拉取集合（可按条件过滤）
  * @param {string} collection 集合名
  * @param {string} orderField 排序字段
  * @param {string} orderDir asc / desc
+ * @param {object} where 过滤条件，如 { gid: 'xxx' }
  */
-async function fetchAll(collection, orderField, orderDir) {
+async function fetchAll(collection, orderField, orderDir, where) {
   orderField = orderField || 'createdAt'
   orderDir = orderDir || 'asc'
-  const cnt = await db.collection(collection).count()
+  where = where || {}
+  const cnt = await db.collection(collection).where(where).count()
   const total = cnt.total
   let arr = []
   const batch = Math.ceil(total / MAX) || 1
   for (let i = 0; i < batch; i++) {
     const res = await db.collection(collection)
+      .where(where)
       .orderBy(orderField, orderDir)
       .skip(i * MAX)
       .limit(MAX)
@@ -26,6 +29,13 @@ async function fetchAll(collection, orderField, orderDir) {
     if (res.data.length < MAX) break
   }
   return arr
+}
+
+/**
+ * 当前行程组 id（空字符串表示还没进组）
+ */
+function gid() {
+  return wx.getStorageSync('gid') || ''
 }
 
 /**
@@ -58,7 +68,7 @@ function isPermError(e) {
 function showDbError(title, e) {
   var content = errText(e)
   if (isPermError(e)) {
-    content += '\n\n这是数据库权限问题，修复方法：\n微信开发者工具 → 云开发 → 数据库 → 点进对应集合 → 权限设置(数据权限) → 自定义安全规则，粘贴：\n{"read": true, "write": true}\n\n三个集合 trips / expenses / members 都要设置，改完点保存/发布。'
+    content += '\n\n这是数据库权限问题，修复方法：\n微信开发者工具 → 云开发 → 数据库 → 点进对应集合 → 权限设置(数据权限) → 自定义安全规则，粘贴：\n{"read": true, "write": true}\n\n三个集合 trips / checklist / groups 都要设置，改完点保存/发布。'
   }
   wx.showModal({
     title: title,
@@ -70,6 +80,7 @@ function showDbError(title, e) {
 module.exports = {
   db: db,
   fetchAll: fetchAll,
+  gid: gid,
   errText: errText,
   showDbError: showDbError
 }

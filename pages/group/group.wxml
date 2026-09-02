@@ -1,0 +1,73 @@
+<view class="page {{theme === 'dark' ? 'theme-dark' : ''}}">
+
+  <view class="g-hero anim-pop">
+    <view class="g-hero-deco">🧭</view>
+    <view class="g-hero-title">行程组</view>
+    <view class="g-hero-sub">每个行程组一套独立数据，互不干扰</view>
+  </view>
+
+  <!-- 我的行程组 -->
+  <view class="g-card anim-in" wx:if="{{myGroups.length}}">
+    <view class="g-card-title">我的行程组</view>
+    <view class="g-group {{item.id === gid ? 'g-group-on' : ''}}" wx:for="{{myGroups}}" wx:key="id"
+          bindtap="onSwitch" bindlongpress="onForget" data-id="{{item.id}}">
+      <view class="g-group-body">
+        <view class="g-group-name">
+          {{item.name}}
+          <text class="g-cur" wx:if="{{item.id === gid}}">当前</text>
+        </view>
+        <view class="g-group-code">邀请码 {{item.code}}</view>
+      </view>
+      <view class="g-copy" catchtap="onCopyCode" data-code="{{item.code}}">复制</view>
+    </view>
+    <view class="g-tip">点按切换，长按可从本机移除（云端数据不受影响）</view>
+  </view>
+
+  <!-- 创建 -->
+  <view class="g-card anim-in" style="animation-delay: 80ms">
+    <view class="g-card-title">创建新行程组</view>
+
+    <view class="frow">
+      <text class="flabel">名称</text>
+      <input class="finput" value="{{form.name}}" bindinput="onFormName"
+             placeholder="如：国庆川西自驾" placeholder-class="ph" />
+    </view>
+
+    <view class="frow">
+      <text class="flabel">出发日期</text>
+      <picker mode="date" value="{{form.startDate}}" bindchange="onFormDate">
+        <view class="fpick">{{form.startDate}}</view>
+      </picker>
+    </view>
+
+    <view class="frow">
+      <text class="flabel">天数</text>
+      <input class="finput" type="number" value="{{form.days}}" bindinput="onFormDays"
+             placeholder="1-15 天" placeholder-class="ph" />
+    </view>
+
+    <view class="frow">
+      <text class="flabel">城市</text>
+      <input class="finput" value="{{form.cities}}" bindinput="onFormCities"
+             placeholder="逗号分隔，用于天气卡" placeholder-class="ph" />
+    </view>
+
+    <view class="btns">
+      <view class="btn btn-save" bindtap="onCreate">创建并生成邀请码</view>
+    </view>
+  </view>
+
+  <!-- 加入 -->
+  <view class="g-card anim-in" style="animation-delay: 160ms">
+    <view class="g-card-title">加入朋友的行程组</view>
+    <view class="g-join-row">
+      <input class="finput g-join-input" value="{{joinCode}}" bindinput="onJoinInput"
+             placeholder="输入 6 位邀请码" placeholder-class="ph" maxlength="6" />
+      <view class="g-join-btn" bindtap="onJoin">加入</view>
+    </view>
+    <view class="g-tip">让朋友在他的行程组里点「复制」邀请码发给你</view>
+  </view>
+
+  <view class="g-enter" wx:if="{{gid}}" bindtap="onEnterPlan">返回当前行程 →</view>
+
+</view>
