@@ -1,0 +1,98 @@
+<view class="page">
+
+  <view class="hero">
+    <view class="hero-title">大理 · 丽江 · 香格里拉</view>
+    <view class="hero-sub">滇西北自驾环线 · 9.7 - 9.13 · 7天6晚</view>
+  </view>
+
+  <view wx:if="{{loading && !days.length}}" class="loading-box">
+    加载中…（首次打开会自动初始化行程，请稍等几秒）
+  </view>
+
+  <view class="day-card" wx:for="{{days}}" wx:key="day" wx:for-item="d">
+    <view class="day-head {{d.theme}}">
+      <view class="day-line">
+        <text class="day-label">{{d.label}}</text>
+        <text class="day-date">{{d.date}}</text>
+      </view>
+    </view>
+
+    <view class="stops">
+      <view class="stop" wx:for="{{d.items}}" wx:key="_id" wx:for-item="s"
+            bindtap="onEditItem" data-id="{{s._id}}">
+        <view class="dot dot-{{s.level}}"></view>
+        <view class="stop-body">
+          <view class="stop-title">
+            <text>{{s.title}}</text>
+            <text wx:if="{{s.fee}}" class="fee {{s.fee === '免费' ? 'fee-free' : 'fee-pay'}}">{{s.fee}}</text>
+          </view>
+          <view class="stop-desc" wx:if="{{s.desc}}">
+            <text wx:if="{{s.time}}">{{s.time}} · </text>{{s.desc}}
+          </view>
+        </view>
+        <view class="chev">›</view>
+      </view>
+    </view>
+
+    <view class="add-row" bindtap="onAddItem" data-day="{{d.day}}">＋ 添加安排</view>
+  </view>
+
+  <view wx:if="{{!loading && !days.length}}" class="empty-box">
+    暂无行程，点下方按钮添加第一条
+  </view>
+
+  <view class="big-add" bindtap="onAddItem" data-day="1">＋ 添加行程</view>
+
+  <!-- 编辑弹窗 -->
+  <view class="mask" wx:if="{{showEdit}}" bindtap="closeEdit">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-title">{{isNew ? '添加安排' : '编辑安排'}}</view>
+
+      <view class="frow">
+        <text class="flabel">名称</text>
+        <input class="finput" value="{{form.title}}" bindinput="onFormTitle"
+               placeholder="如：环洱海自驾" placeholder-class="ph" />
+      </view>
+
+      <view class="frow">
+        <text class="flabel">第几天</text>
+        <picker mode="selector" range="{{dayLabels}}" value="{{form.day - 1}}" bindchange="onFormDay">
+          <view class="fpick">{{dayLabels[form.day - 1]}}</view>
+        </picker>
+      </view>
+
+      <view class="frow">
+        <text class="flabel">时间</text>
+        <input class="finput" value="{{form.time}}" bindinput="onFormTime"
+               placeholder="如 16:40 / 上午（可不填）" placeholder-class="ph" />
+      </view>
+
+      <view class="frow">
+        <text class="flabel">费用</text>
+        <input class="finput" value="{{form.fee}}" bindinput="onFormFee"
+               placeholder="免费 / 约45元（可不填）" placeholder-class="ph" />
+      </view>
+
+      <view class="frow">
+        <text class="flabel">标记</text>
+        <view class="level-group">
+          <view class="level-btn lv-{{item.key}} {{form.level === item.key ? 'lv-on' : ''}}"
+                wx:for="{{levels}}" wx:key="key"
+                bindtap="onFormLevel" data-level="{{item.key}}">{{item.label}}</view>
+        </view>
+      </view>
+
+      <view class="frow fcol">
+        <text class="flabel">说明</text>
+        <textarea class="ftext" value="{{form.desc}}" bindinput="onFormDesc"
+                  placeholder="补充说明（可不填）" placeholder-class="ph" maxlength="200" />
+      </view>
+
+      <view class="btns">
+        <view class="btn btn-del" wx:if="{{!isNew}}" bindtap="onDelete">删除</view>
+        <view class="btn btn-save" bindtap="onSave">保存</view>
+      </view>
+    </view>
+  </view>
+
+</view>

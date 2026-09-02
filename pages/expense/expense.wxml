@@ -1,0 +1,101 @@
+<view class="page">
+
+  <view class="topbar">
+    <view class="total-box">
+      <text class="total-num">¥{{total}}</text>
+      <text class="total-label">总支出 · {{expenses.length}} 笔</text>
+    </view>
+    <view class="member-btn" bindtap="toggleMembers">
+      <text class="member-ico">👥</text>
+      <text>成员 {{members.length}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{loading && !expenses.length}}" class="loading-box">加载中…</view>
+
+  <view class="exp-item" wx:for="{{expenses}}" wx:key="_id"
+        bindtap="onEditExp" data-id="{{item._id}}">
+    <view class="exp-date">{{item.date}}</view>
+    <view class="exp-body">
+      <view class="exp-title">{{item.title}}</view>
+      <view class="exp-meta">{{item.payer}} 付 · {{item.members.length}} 人平摊</view>
+    </view>
+    <view class="exp-amount">¥{{item.amount}}</view>
+  </view>
+
+  <view wx:if="{{!loading && !expenses.length}}" class="empty-box">
+    <view>还没有账单~</view>
+    <view>点下方按钮记第一笔</view>
+  </view>
+
+  <view class="add-btn" bindtap="onAdd">＋ 记一笔</view>
+
+  <!-- 记账弹窗 -->
+  <view class="mask" wx:if="{{showForm}}" bindtap="closeForm">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-title">{{isNew ? '记一笔' : '编辑账单'}}</view>
+
+      <view class="frow">
+        <text class="flabel">日期</text>
+        <picker mode="selector" range="{{dates}}" value="{{form.dateIdx}}" bindchange="onFormDate">
+          <view class="fpick">{{dates[form.dateIdx]}}</view>
+        </picker>
+      </view>
+
+      <view class="frow">
+        <text class="flabel">项目</text>
+        <input class="finput" value="{{form.title}}" bindinput="onFormTitle"
+               placeholder="如：加油 / 晚餐 / 门票" placeholder-class="ph" />
+      </view>
+
+      <view class="frow">
+        <text class="flabel">金额(元)</text>
+        <input class="finput" type="digit" value="{{form.amount}}" bindinput="onFormAmount"
+               placeholder="0.00" placeholder-class="ph" />
+      </view>
+
+      <view class="frow">
+        <text class="flabel">谁付的</text>
+        <picker mode="selector" range="{{memberNames}}" value="{{form.payerIdx}}" bindchange="onFormPayer">
+          <view class="fpick">{{memberNames[form.payerIdx] || '请选择'}}</view>
+        </picker>
+      </view>
+
+      <view class="frow fcol">
+        <text class="flabel">参与平摊（已选 {{form.memberSel.length}} 人）</text>
+        <checkbox-group class="cb-group" bindchange="onFormMembers">
+          <label class="cb {{item.checked ? 'cb-on' : ''}}" wx:for="{{cbMembers}}" wx:key="_id">
+            <checkbox value="{{item.name}}" checked="{{item.checked}}" />{{item.name}}
+          </label>
+        </checkbox-group>
+      </view>
+
+      <view class="btns">
+        <view class="btn btn-del" wx:if="{{!isNew}}" bindtap="onDeleteExp">删除</view>
+        <view class="btn btn-save" bindtap="onSaveExp">保存</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 成员管理弹窗 -->
+  <view class="mask" wx:if="{{showMembers}}" bindtap="toggleMembers">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-title">成员管理</view>
+      <view class="mem-tip">把同行的人都加上，记账时选谁付的、谁参与平摊。建议一开始就用大家都会叫的名字。</view>
+
+      <view class="mem-row" wx:for="{{members}}" wx:key="_id">
+        <text>{{item.name}}</text>
+        <text class="mem-del" bindtap="onRemoveMember" data-id="{{item._id}}">删除</text>
+      </view>
+
+      <view wx:if="{{!members.length}}" class="loading-box">还没有成员，下面加一个</view>
+
+      <view class="frow" style="margin-top: 16rpx;">
+        <input class="finput" value="{{newName}}" bindinput="onNewName"
+               placeholder="输入名字或外号，如：老王" placeholder-class="ph" />
+        <view class="mem-add" bindtap="onAddMember">添加</view>
+      </view>
+    </view>
+  </view>
+
+</view>

@@ -1,0 +1,171 @@
+.page {
+  padding: 24rpx 24rpx 180rpx;
+}
+
+/* 顶部横幅 */
+.hero {
+  background: linear-gradient(150deg, #274060, #3A6EA5);
+  color: #fff;
+  border-radius: 24rpx;
+  text-align: center;
+  padding: 44rpx 20rpx 40rpx;
+  margin-bottom: 24rpx;
+}
+.hero-title {
+  font-size: 40rpx;
+  font-weight: 700;
+  letter-spacing: 4rpx;
+}
+.hero-sub {
+  font-size: 24rpx;
+  opacity: 0.85;
+  margin-top: 10rpx;
+}
+
+/* 每日卡片 */
+.day-card {
+  background: #fff;
+  border-radius: 24rpx;
+  overflow: hidden;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.04);
+}
+.day-head {
+  padding: 24rpx 28rpx;
+  color: #fff;
+}
+.day-head.dali { background: linear-gradient(120deg, #4A90D9, #2E6FB7); }
+.day-head.lijiang { background: linear-gradient(120deg, #E8913A, #C67A1E); }
+.day-head.shangrila { background: linear-gradient(120deg, #C0392B, #96281B); }
+
+.day-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.day-label {
+  font-size: 32rpx;
+  font-weight: 700;
+}
+.day-date {
+  font-size: 24rpx;
+  opacity: 0.9;
+}
+
+/* 景点列表 */
+.stops {
+  padding: 8rpx 28rpx 8rpx;
+}
+.stop {
+  display: flex;
+  align-items: flex-start;
+  padding: 24rpx 0;
+  border-bottom: 1rpx dashed #EEE;
+}
+.stop:last-child {
+  border-bottom: none;
+}
+.dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  margin: 18rpx 20rpx 0 0;
+  flex-shrink: 0;
+  background: #CCC;
+}
+.dot-must { background: #E74C3C; }
+.dot-rec { background: #F39C12; }
+.dot-opt { background: #B0B6BF; }
+
+.stop-body {
+  flex: 1;
+  min-width: 0;
+}
+.stop-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8rpx;
+}
+.fee {
+  font-size: 20rpx;
+  padding: 2rpx 14rpx;
+  border-radius: 99rpx;
+  font-weight: 500;
+}
+.fee-free {
+  background: #E6F6EC;
+  color: #1E8E4E;
+}
+.fee-pay {
+  background: #FDECEA;
+  color: #D63031;
+}
+.stop-desc {
+  font-size: 24rpx;
+  color: #888;
+  margin-top: 4rpx;
+}
+.chev {
+  color: #CCC;
+  font-size: 34rpx;
+  margin-left: 8rpx;
+}
+
+.add-row {
+  text-align: center;
+  padding: 20rpx 0 26rpx;
+  color: #2E5A88;
+  font-size: 26rpx;
+  border-top: 1rpx solid #F5F5F8;
+}
+
+/* 底部大按钮 */
+.big-add {
+  position: fixed;
+  left: 24rpx;
+  right: 24rpx;
+  bottom: 40rpx;
+  background: #2E5A88;
+  color: #fff;
+  text-align: center;
+  padding: 26rpx 0;
+  border-radius: 99rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  box-shadow: 0 8rpx 20rpx rgba(46, 90, 136, 0.35);
+  z-index: 10;
+}
+
+/* 等级选择 */
+.level-group {
+  display: flex;
+  gap: 16rpx;
+  flex: 1;
+}
+.level-btn {
+  flex: 1;
+  text-align: center;
+  padding: 14rpx 0;
+  border-radius: 12rpx;
+  font-size: 26rpx;
+  background: #F2F3F7;
+  color: #666;
+}
+.lv-must.lv-on {
+  background: #FDECEA;
+  color: #D63031;
+  font-weight: 600;
+}
+.lv-rec.lv-on {
+  background: #FDF3E3;
+  color: #C67A1E;
+  font-weight: 600;
+}
+.lv-opt.lv-on {
+  background: #EDEFF3;
+  color: #555;
+  font-weight: 600;
+}

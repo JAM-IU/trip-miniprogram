@@ -1,0 +1,36 @@
+{
+  "pages": [
+    "pages/plan/plan",
+    "pages/expense/expense",
+    "pages/settle/settle"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#2E5A88",
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "滇西北自驾行程",
+    "backgroundColor": "#EDEDF2",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "color": "#8A8A8A",
+    "selectedColor": "#2E5A88",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/plan/plan",
+        "text": "行程"
+      },
+      {
+        "pagePath": "pages/expense/expense",
+        "text": "记账"
+      },
+      {
+        "pagePath": "pages/settle/settle",
+        "text": "结算"
+      }
+    ]
+  },
+  "sitemapLocation": "sitemap.json",
+  "style": "v2"
+}

@@ -1,0 +1,44 @@
+<view class="page">
+
+  <view wx:if="{{loading}}" class="loading-box">计算中…</view>
+
+  <view wx:if="{{!loading && !hasMembers}}" class="empty-box">
+    <view>还没有成员</view>
+    <view>请先到「记账」页点右上角「成员」添加同行的人</view>
+  </view>
+
+  <block wx:if="{{!loading && hasMembers}}">
+    <!-- 总览 -->
+    <view class="overview">
+      <view class="ov-num">¥{{totalAmount}}</view>
+      <view class="ov-label">总共消费 · {{count}} 笔 · {{stats.length}} 人</view>
+    </view>
+
+    <!-- 每人明细 -->
+    <view class="section-title">每人明细</view>
+    <view class="stat-card" wx:for="{{stats}}" wx:key="name">
+      <view class="stat-name">{{item.name}}</view>
+      <view class="stat-detail">
+        <view>垫付 ¥{{item.paid}}</view>
+        <view>消费 ¥{{item.owe}}</view>
+      </view>
+      <view class="stat-net {{item.isPos ? 'pos' : (item.isZero ? 'zero' : 'neg')}}">{{item.netLabel}}</view>
+    </view>
+
+    <!-- 转账方案 -->
+    <view class="section-title" wx:if="{{transfers.length}}">最简转账方案</view>
+    <view class="transfer-card" wx:if="{{transfers.length}}">
+      <view class="tr-row" wx:for="{{transfers}}" wx:key="index">
+        <text class="tr-who">{{item.from}} → {{item.to}}</text>
+        <text class="tr-amount">¥{{item.amount}}</text>
+      </view>
+    </view>
+
+    <view class="ok-card" wx:if="{{!transfers.length}}">
+      目前人人账目已平，不用互相转账 🎉
+    </view>
+
+    <view class="foot-tip">大家都在「记账」页记完账，这里的结算自动更新</view>
+  </block>
+
+</view>
