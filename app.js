@@ -93,5 +93,19 @@ App({
       backgroundColor: isDark ? '#0F1420' : '#F7F8FC',
       animation: { duration: 200, timingFunc: 'easeIn' }
     })
+    // 底部 dock 栏
+    this.syncTabBar(theme)
+  },
+
+  // 同步底部 dock 栏配色（双主题）；tabBar 未就绪时静默失败，tab 页 onShow 会补调
+  syncTabBar(theme) {
+    const isDark = (theme || this.globalData.theme) === 'dark'
+    wx.setTabBarStyle({
+      color: isDark ? '#8A93A6' : '#8993A6',
+      selectedColor: isDark ? '#75B7FF' : '#4F8CFF',
+      backgroundColor: isDark ? '#0F1420' : '#FFFFFF',
+      borderStyle: isDark ? 'black' : 'white',
+      fail: function () {}
+    })
   }
 })

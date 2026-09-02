@@ -11,6 +11,16 @@
     "backgroundColor": "#EEF0F5",
     "backgroundTextStyle": "dark"
   },
+  "tabBar": {
+    "color": "#8993A6",
+    "selectedColor": "#4F8CFF",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/plan/plan", "text": "行程" },
+      { "pagePath": "pages/photos/photos", "text": "照片墙" }
+    ]
+  },
   "sitemapLocation": "sitemap.json",
   "style": "v2"
 }

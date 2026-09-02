@@ -20,6 +20,7 @@ Page({
 
   onShow() {
     this.setData({ theme: getApp().globalData.theme })
+    getApp().syncTabBar()
   },
 
   // 系统主题变化时由 app.js 调用

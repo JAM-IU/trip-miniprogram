@@ -150,6 +150,7 @@ Page({
 
   onShow() {
     this.setData({ theme: getApp().globalData.theme, themeIcon: themeIcon() })
+    getApp().syncTabBar()
     scrollHide.reset(this)
     const gid = dbUtil.gid()
     if (!gid) {
@@ -220,11 +221,6 @@ Page({
 
   onOpenGroup() {
     wx.navigateTo({ url: '/pages/group/group' })
-  },
-
-  // 照片墙占位页
-  onOpenPhotos() {
-    wx.navigateTo({ url: '/pages/photos/photos' })
   },
 
   // 主题：跟随系统 → 白天 → 夜间 → 跟随系统

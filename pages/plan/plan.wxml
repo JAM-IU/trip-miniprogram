@@ -57,16 +57,6 @@
     <view class="pk-entry-num">{{pack.doneCount}}/{{pack.totalCount}}</view>
   </view>
 
-  <!-- 照片墙入口（占位） -->
-  <view class="pk-entry anim-in" bindtap="onOpenPhotos">
-    <view class="pk-entry-ico">📷</view>
-    <view class="pk-entry-body">
-      <view class="pk-entry-title">旅行照片墙</view>
-      <view class="pk-entry-sub">同组照片回忆墙，敬请期待</view>
-    </view>
-    <view class="pk-entry-soon">SOON</view>
-  </view>
-
   <view wx:if="{{loading && !days.length}}" class="loading-box">
     加载中…
   </view>
