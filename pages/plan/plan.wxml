@@ -185,6 +185,12 @@
         </view>
       </view>
 
+      <view class="frow">
+        <text class="flabel">导航点</text>
+        <view class="fpick loc-pick" bindtap="onPickLocation">{{form.lat ? '📍 已设置，点我修改' : '未设置，点我选择位置'}}</view>
+        <text wx:if="{{form.lat}}" class="loc-clear" bindtap="onClearLocation">清除</text>
+      </view>
+
       <view class="frow fcol">
         <text class="flabel">说明</text>
         <textarea class="ftext" value="{{form.desc}}" bindinput="onFormDesc"

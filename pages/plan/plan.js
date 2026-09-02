@@ -521,6 +521,33 @@ Page({
     this.setData({ 'form.image': src, 'form.imageSel': key })
   },
 
+  // 打开地图选导航点
+  onPickLocation() {
+    const that = this
+    wx.chooseLocation({
+      latitude: Number(that.data.form.lat) || undefined,
+      longitude: Number(that.data.form.lng) || undefined,
+      success: function (res) {
+        that.setData({ 'form.lat': res.latitude, 'form.lng': res.longitude })
+        wx.showToast({ title: '导航点已设置', icon: 'none' })
+      },
+      fail: function (err) {
+        if (err && err.errMsg && /cancel/i.test(err.errMsg)) return
+        if (err && err.errMsg && /auth|deny|authorize/i.test(err.errMsg)) {
+          wx.showModal({
+            title: '需要位置权限',
+            content: '请在「右上角··· → 设置」中允许使用位置信息，再来设置导航点',
+            showCancel: false
+          })
+        }
+      }
+    })
+  },
+
+  onClearLocation() {
+    this.setData({ 'form.lat': '', 'form.lng': '' })
+  },
+
   async onSave() {
     if (this.data.saving) return
     const f = this.data.form

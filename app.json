@@ -33,5 +33,13 @@
     ]
   },
   "sitemapLocation": "sitemap.json",
-  "style": "v2"
+  "style": "v2",
+  "permission": {
+    "scope.userLocation": {
+      "desc": "用于为行程设置导航点和一键导航"
+    }
+  },
+  "requiredPrivateInfos": [
+    "chooseLocation"
+  ]
 }
