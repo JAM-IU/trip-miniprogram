@@ -1,12 +1,31 @@
 // 记账页
 const dbUtil = require('../../utils/db')
 const seed = require('../../utils/seed')
+const scrollHide = require('../../utils/scrollhide')
 const db = dbUtil.db
+
+// 金额数字滚动动画（0 → 目标值）
+function rollNumber(that, key, target) {
+  target = Number(target) || 0
+  const duration = 600
+  const start = Date.now()
+  const timer = setInterval(function () {
+    const p = Math.min(1, (Date.now() - start) / duration)
+    const eased = 1 - Math.pow(1 - p, 3)
+    const d = {}
+    d[key] = Math.round(target * eased * 100) / 100
+    that.setData(d)
+    if (p >= 1) clearInterval(timer)
+  }, 16)
+}
 
 Page({
   data: {
+    theme: 'light',
     loading: true,
+    saving: false,
     expenses: [],
+    barHidden: false,
     total: 0,
     members: [],
     memberNames: [],
@@ -19,11 +38,38 @@ Page({
     cbMembers: [],
     // 成员弹窗
     showMembers: false,
-    newName: ''
+    newName: '',
+    tempAvatar: '',
+    // 微信身份（openid 自动识别）
+    myOpenid: '',
+    myMember: null,
+    joinName: '',
+    joinAvatar: ''
   },
 
   onShow() {
+    this.setData({ theme: getApp().globalData.theme })
+    this.syncTabBar(1)
+    scrollHide.reset(this)
     this.loadData()
+  },
+
+  onPageScroll(e) {
+    scrollHide.handle(this, e)
+  },
+
+  // 系统主题变化时由 app.js 调用
+  applyTheme(theme) {
+    this.setData({ theme: theme })
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      this.getTabBar().setData({ theme: theme })
+    }
+  },
+
+  syncTabBar(selected) {
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      this.getTabBar().setData({ selected: selected, theme: getApp().globalData.theme })
+    }
   },
 
   async loadData() {
@@ -31,22 +77,28 @@ Page({
     try {
       const exps = await dbUtil.fetchAll('expenses', 'createdAt', 'asc')
       const mems = await dbUtil.fetchAll('members', 'createdAt', 'asc')
+      // 静默拿到 openid，自动认出"我"是哪个成员
+      let oid = getApp().globalData.openid
+      if (!oid && getApp().globalData.openidReady) {
+        oid = await getApp().globalData.openidReady
+      }
+      const my = oid ? mems.find(function (m) { return m.openid === oid }) : null
       let total = 0
       exps.forEach(function (e) { total += e.amount || 0 })
+      total = Math.round(total * 100) / 100
       this.setData({
         expenses: exps,
         members: mems,
         memberNames: mems.map(function (m) { return m.name }),
-        total: Math.round(total * 100) / 100,
+        myOpenid: oid || '',
+        myMember: my || null,
+        total: 0,
         loading: false
       })
+      rollNumber(this, 'total', total)
     } catch (e) {
       this.setData({ loading: false })
-      wx.showModal({
-        title: '加载失败',
-        content: '请确认已创建 expenses 和 members 集合（见教程第5步）。' + ((e && (e.errMsg || e.message)) || ''),
-        showCancel: false
-      })
+      dbUtil.showDbError('加载失败', e)
     }
   },
 
@@ -67,9 +119,18 @@ Page({
 
   // ===== 记一笔 =====
   onAdd() {
+    console.log('[记一笔] 点击已触发，当前成员数：', this.data.members.length)
     if (!this.data.members.length) {
-      wx.showToast({ title: '先添加成员，马上就好', icon: 'none' })
-      this.setData({ showMembers: true })
+      const that = this
+      wx.showModal({
+        title: '还没有成员',
+        content: '记第一笔前，需要先加入同行的人（付钱的和参与平摊的）。',
+        confirmText: '去添加成员',
+        confirmColor: '#4F8CFF',
+        success: function (r) {
+          if (r.confirm) that.setData({ showMembers: true })
+        }
+      })
       return
     }
     const all = this.data.memberNames.slice()
@@ -104,6 +165,7 @@ Page({
   },
 
   closeForm() {
+    if (this.data.saving) return
     this.setData({ showForm: false })
   },
 
@@ -119,6 +181,7 @@ Page({
   },
 
   async onSaveExp() {
+    if (this.data.saving) return
     const f = this.data.form
     const title = (f.title || '').trim()
     const amount = parseFloat(f.amount)
@@ -148,7 +211,8 @@ Page({
       members: members,
       updatedAt: Date.now()
     }
-    wx.showLoading({ title: '保存中' })
+    this.setData({ saving: true })
+    wx.showLoading({ title: '保存中', mask: true })
     try {
       if (this.data.isNew) {
         payload.createdAt = Date.now()
@@ -157,11 +221,13 @@ Page({
         await db.collection('expenses').doc(this.data.editId).update({ data: payload })
       }
       wx.hideLoading()
-      this.setData({ showForm: false })
+      this.setData({ showForm: false, saving: false })
+      wx.showToast({ title: '已记账', icon: 'success', duration: 1200 })
       this.loadData()
     } catch (e) {
       wx.hideLoading()
-      wx.showToast({ title: '保存失败，请重试', icon: 'none' })
+      this.setData({ saving: false })
+      dbUtil.showDbError('保存失败', e)
     }
   },
 
@@ -173,7 +239,7 @@ Page({
       confirmColor: '#D63031',
       success: async function (r) {
         if (!r.confirm) return
-        wx.showLoading({ title: '删除中' })
+        wx.showLoading({ title: '删除中', mask: true })
         try {
           await db.collection('expenses').doc(that.data.editId).remove()
           wx.hideLoading()
@@ -181,7 +247,7 @@ Page({
           that.loadData()
         } catch (e) {
           wx.hideLoading()
-          wx.showToast({ title: '删除失败，请重试', icon: 'none' })
+          dbUtil.showDbError('删除失败', e)
         }
       }
     })
@@ -189,11 +255,28 @@ Page({
 
   // ===== 成员管理 =====
   toggleMembers() {
-    this.setData({ showMembers: !this.data.showMembers, newName: '' })
+    this.setData({ showMembers: !this.data.showMembers, newName: '', tempAvatar: '', joinName: '', joinAvatar: '' })
   },
 
   onNewName(e) {
     this.setData({ newName: e.detail.value })
+  },
+
+  // 选择微信头像
+  onChooseAvatar(e) {
+    this.setData({ tempAvatar: e.detail.avatarUrl })
+  },
+
+  // 上传头像（免费套餐存储受限时静默跳过，不影响加人）
+  async tryUploadAvatar(tempPath) {
+    try {
+      const ext = (tempPath.match(/\.(\w+)$/) || [])[1] || 'jpg'
+      const cloudPath = 'avatars/' + Date.now() + '-' + Math.floor(Math.random() * 10000) + '.' + ext
+      const up = await wx.cloud.uploadFile({ cloudPath: cloudPath, filePath: tempPath })
+      return (up && up.fileID) || ''
+    } catch (e) {
+      return ''
+    }
   },
 
   async onAddMember() {
@@ -206,15 +289,64 @@ Page({
       wx.showToast({ title: '已经有这个人啦', icon: 'none' })
       return
     }
-    wx.showLoading({ title: '添加中' })
+    wx.showLoading({ title: '添加中', mask: true })
     try {
-      await db.collection('members').add({ data: { name: name, createdAt: Date.now() } })
+      const data = { name: name, createdAt: Date.now() }
+      if (this.data.tempAvatar) {
+        const fid = await this.tryUploadAvatar(this.data.tempAvatar)
+        if (fid) data.avatar = fid
+      }
+      await db.collection('members').add({ data: data })
       wx.hideLoading()
-      this.setData({ newName: '' })
+      this.setData({ newName: '', tempAvatar: '' })
       this.loadData()
     } catch (e) {
       wx.hideLoading()
-      wx.showToast({ title: '添加失败，请重试', icon: 'none' })
+      dbUtil.showDbError('添加失败', e)
+    }
+  },
+
+  // ===== 微信一键加入 =====
+  onJoinAvatar(e) {
+    this.setData({ joinAvatar: e.detail.avatarUrl })
+  },
+
+  onJoinName(e) {
+    this.setData({ joinName: e.detail.value })
+  },
+
+  async onJoinWechat() {
+    const name = (this.data.joinName || '').trim()
+    if (!name) {
+      wx.showToast({ title: '先填一下昵称', icon: 'none' })
+      return
+    }
+    const oid = this.data.myOpenid
+    wx.showLoading({ title: '加入中', mask: true })
+    try {
+      // 同名成员已存在（比如别人提前把你加好了）→ 直接绑定 openid 认领
+      const exist = this.data.members.find(function (m) { return m.name === name })
+      if (exist) {
+        await db.collection('members').doc(exist._id).update({ data: { openid: oid } })
+        wx.hideLoading()
+        this.setData({ joinName: '', joinAvatar: '' })
+        wx.showToast({ title: '已认领「' + name + '」', icon: 'none' })
+        this.loadData()
+        return
+      }
+      const data = { name: name, openid: oid, createdAt: Date.now() }
+      if (this.data.joinAvatar) {
+        const fid = await this.tryUploadAvatar(this.data.joinAvatar)
+        if (fid) data.avatar = fid
+      }
+      await db.collection('members').add({ data: data })
+      wx.hideLoading()
+      this.setData({ joinName: '', joinAvatar: '' })
+      wx.showToast({ title: '加入成功', icon: 'success' })
+      this.loadData()
+    } catch (e) {
+      wx.hideLoading()
+      dbUtil.showDbError('加入失败', e)
     }
   },
 
@@ -231,7 +363,7 @@ Page({
           await db.collection('members').doc(id).remove()
           that.loadData()
         } catch (e) {
-          wx.showToast({ title: '删除失败', icon: 'none' })
+          dbUtil.showDbError('删除失败', e)
         }
       }
     })

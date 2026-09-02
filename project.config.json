@@ -3,6 +3,7 @@
   "libVersion": "3.8.0",
   "appid": "wxcf68f8efcb81c89d",
   "projectname": "dianxi-trip",
+  "cloudfunctionRoot": "cloudfunctions/",
   "setting": {
     "es6": true,
     "enhance": true,

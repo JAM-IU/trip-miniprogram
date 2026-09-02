@@ -28,4 +28,48 @@ async function fetchAll(collection, orderField, orderDir) {
   return arr
 }
 
-module.exports = { db: db, fetchAll: fetchAll }
+/**
+ * 提取错误文本
+ */
+function errText(e) {
+  if (!e) return '未知错误'
+  if (typeof e === 'string') return e
+  var t = ''
+  if (e.errMsg) t += e.errMsg
+  if (e.errCode !== undefined && e.errCode !== null) t += ' (code ' + e.errCode + ')'
+  if (!t && e.message) t = e.message
+  if (!t) {
+    try { t = JSON.stringify(e) } catch (x) { t = String(e) }
+  }
+  return t
+}
+
+/**
+ * 是否像权限错误
+ */
+function isPermError(e) {
+  var t = errText(e)
+  return /permission|denied|权限/i.test(t)
+}
+
+/**
+ * 统一的数据库错误弹窗：显示具体原因，权限问题附修复方法
+ */
+function showDbError(title, e) {
+  var content = errText(e)
+  if (isPermError(e)) {
+    content += '\n\n这是数据库权限问题，修复方法：\n微信开发者工具 → 云开发 → 数据库 → 点进对应集合 → 权限设置(数据权限) → 自定义安全规则，粘贴：\n{"read": true, "write": true}\n\n三个集合 trips / expenses / members 都要设置，改完点保存/发布。'
+  }
+  wx.showModal({
+    title: title,
+    content: content,
+    showCancel: false
+  })
+}
+
+module.exports = {
+  db: db,
+  fetchAll: fetchAll,
+  errText: errText,
+  showDbError: showDbError
+}

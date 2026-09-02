@@ -1,16 +1,71 @@
-<view class="page">
+<view class="page {{theme === 'dark' ? 'theme-dark' : ''}}">
 
-  <view class="hero">
-    <view class="hero-title">大理 · 丽江 · 香格里拉</view>
-    <view class="hero-sub">滇西北自驾环线 · 9.7 - 9.13 · 7天6晚</view>
+  <view class="hero anim-pop">
+    <image class="hero-bg" src="{{heroImage}}" mode="aspectFill" />
+    <view class="hero-mask"></view>
+    <view class="hero-content">
+      <view class="hero-deco">🏔️</view>
+      <view class="hero-title">大理 · 丽江 · 香格里拉</view>
+      <view class="hero-sub">滇西北自驾环线</view>
+      <view class="hero-badge">9.7 — 9.13 · 7天6晚</view>
+    </view>
+  </view>
+
+  <!-- 出发倒计时卡 -->
+  <view class="cd-card anim-in" wx:if="{{countdown}}">
+    <view class="cd-num" wx:if="{{countdown.mode === 'before'}}">{{countdown.days}}</view>
+    <view class="cd-emoji" wx:else>{{countdown.mode === 'during' ? '🚗' : '🎉'}}</view>
+    <view class="cd-body">
+      <view class="cd-title">{{countdown.title}}<text wx:if="{{countdown.mode === 'before'}}"> 天</text></view>
+      <view class="cd-sub">{{countdown.sub}}</view>
+      <view class="cd-dots">
+        <view class="cd-dot {{item ? 'cd-dot-on' : ''}}" wx:for="{{countdown.dots}}" wx:key="index"></view>
+      </view>
+    </view>
+    <view class="cd-check" wx:if="{{countdown.totalCount}}">
+      <view class="cd-check-num">{{countdown.doneCount}}<text class="cd-check-total">/{{countdown.totalCount}}</text></view>
+      <view class="cd-check-label">已打卡</view>
+    </view>
+  </view>
+  <view class="cd-tip">💡 长按景点卡片打卡，点 📍 直接导航</view>
+
+  <!-- 天气提醒卡 -->
+  <view class="wx-card anim-in" wx:if="{{weather}}">
+    <view class="wx-cities">
+      <view class="wx-city" wx:for="{{weather.items}}" wx:key="name">
+        <view class="wx-icon">{{item.icon}}</view>
+        <view class="wx-name">{{item.name}}</view>
+        <view class="wx-text">{{item.text}}</view>
+        <view class="wx-temp">{{item.low}}~{{item.high}}°</view>
+      </view>
+    </view>
+    <view class="wx-foot">
+      <text class="wx-tip">💡 {{weather.tip}}</text>
+      <text class="wx-time">{{weather.timeStr}}</text>
+    </view>
+  </view>
+
+  <!-- 携带清单入口 -->
+  <view class="pk-entry anim-in" wx:if="{{pack.totalCount}}" bindtap="onOpenPack">
+    <view class="pk-entry-ico">🎒</view>
+    <view class="pk-entry-body">
+      <view class="pk-entry-title">携带清单{{packLocal ? '（本地）' : ''}}</view>
+      <view class="pk-entry-bar">
+        <view class="pk-entry-fill" style="width: {{pack.doneCount / pack.totalCount * 100}}%"></view>
+      </view>
+    </view>
+    <view class="pk-entry-num">{{pack.doneCount}}/{{pack.totalCount}}</view>
   </view>
 
   <view wx:if="{{loading && !days.length}}" class="loading-box">
-    加载中…（首次打开会自动初始化行程，请稍等几秒）
+    加载中…首次打开自动初始化行程
   </view>
 
-  <view class="day-card" wx:for="{{days}}" wx:key="day" wx:for-item="d">
-    <view class="day-head {{d.theme}}">
+  <view class="day-card anim-in" id="day-{{d.day}}" wx:for="{{days}}" wx:key="day" wx:for-item="d"
+        style="animation-delay: {{index * 80}}ms">
+    <view class="day-head">
+      <image class="day-bg" src="{{d.headImage}}" mode="aspectFill" />
+      <view class="day-mask"></view>
       <view class="day-line">
         <text class="day-label">{{d.label}}</text>
         <text class="day-date">{{d.date}}</text>
@@ -19,34 +74,49 @@
 
     <view class="stops">
       <view class="stop" wx:for="{{d.items}}" wx:key="_id" wx:for-item="s"
-            bindtap="onEditItem" data-id="{{s._id}}">
-        <view class="dot dot-{{s.level}}"></view>
-        <view class="stop-body">
-          <view class="stop-title">
-            <text>{{s.title}}</text>
-            <text wx:if="{{s.fee}}" class="fee {{s.fee === '免费' ? 'fee-free' : 'fee-pay'}}">{{s.fee}}</text>
-          </view>
-          <view class="stop-desc" wx:if="{{s.desc}}">
-            <text wx:if="{{s.time}}">{{s.time}} · </text>{{s.desc}}
+            bindtap="onEditItem" bindlongpress="onToggleDone" data-id="{{s._id}}">
+        <view class="stop-left">
+          <view class="dot {{s.done ? 'dot-done' : 'dot-' + s.level}}"></view>
+          <view class="timeline-line" wx:if="{{index < d.items.length - 1}}"></view>
+        </view>
+        <view class="stop-body {{s.done ? 'stop-done' : ''}}">
+          <image class="stop-bg" src="{{s.thumb}}" mode="aspectFill" />
+          <view class="stop-mask"></view>
+          <view class="stop-tag tag-{{s.level}}">{{s.level === 'must' ? '必去' : (s.level === 'rec' ? '推荐' : '可选')}}</view>
+          <view class="done-badge" wx:if="{{s.done}}">✓ 已打卡</view>
+          <view class="nav-btn" wx:if="{{s.lat && s.lng}}" catchtap="onNavSpot" data-id="{{s._id}}">📍</view>
+          <view class="stop-content">
+            <view class="stop-title">
+              <text>{{s.title}}</text>
+              <text wx:if="{{s.fee}}" class="fee {{s.fee === '免费' ? 'fee-free' : 'fee-pay'}}">{{s.fee}}{{s.payer ? ' · ' + s.payer + '付' : ''}}</text>
+            </view>
+            <view class="stop-desc" wx:if="{{s.time || s.desc}}">
+              <text wx:if="{{s.time}}" class="stop-time">{{s.time}}</text>
+              <text wx:if="{{s.time && s.desc}}"> · </text>
+              <text>{{s.desc}}</text>
+            </view>
           </view>
         </view>
-        <view class="chev">›</view>
       </view>
     </view>
 
-    <view class="add-row" bindtap="onAddItem" data-day="{{d.day}}">＋ 添加安排</view>
+    <view class="add-row" bindtap="onAddItem" data-day="{{d.day}}">
+      <text class="add-ico">＋</text> 添加安排
+    </view>
   </view>
 
   <view wx:if="{{!loading && !days.length}}" class="empty-box">
     暂无行程，点下方按钮添加第一条
   </view>
 
-  <view class="big-add" bindtap="onAddItem" data-day="1">＋ 添加行程</view>
+  <view class="big-add {{barHidden ? 'fab-hide' : ''}}" bindtap="onAddItem" data-day="1">
+    <text class="ba-ico">＋</text>
+  </view>
 
   <!-- 编辑弹窗 -->
   <view class="mask" wx:if="{{showEdit}}" bindtap="closeEdit">
     <view class="sheet" catchtap="noop">
-      <view class="sheet-title">{{isNew ? '添加安排' : '编辑安排'}}</view>
+      <view class="sheet-title">{{isNew ? '✏️ 添加安排' : '✏️ 编辑安排'}}</view>
 
       <view class="frow">
         <text class="flabel">名称</text>
@@ -67,10 +137,43 @@
                placeholder="如 16:40 / 上午（可不填）" placeholder-class="ph" />
       </view>
 
+      <view class="frow fcol">
+        <text class="flabel">配图</text>
+        <scroll-view class="img-picker" scroll-x enhanced="true" show-scrollbar="{{false}}">
+          <view class="img-opt {{form.imageSel === 'auto' ? 'img-on' : ''}}"
+                bindtap="onPickGallery" data-key="auto" data-src="">
+            <view class="img-thumb img-thumb-auto">自动</view>
+            <text class="img-label">自动</text>
+          </view>
+          <view class="img-opt {{form.imageSel === item.key ? 'img-on' : ''}}"
+                wx:for="{{gallery}}" wx:key="key"
+                bindtap="onPickGallery" data-key="{{item.key}}" data-src="{{item.src}}">
+            <image class="img-thumb" src="{{item.src}}" mode="aspectFill" />
+            <text class="img-label">{{item.label}}</text>
+          </view>
+        </scroll-view>
+      </view>
+
       <view class="frow">
-        <text class="flabel">费用</text>
-        <input class="finput" value="{{form.fee}}" bindinput="onFormFee"
-               placeholder="免费 / 约45元（可不填）" placeholder-class="ph" />
+        <text class="flabel">金额(元)</text>
+        <input class="finput" type="digit" value="{{form.amount}}" bindinput="onFormAmount"
+               placeholder="不记账可留空，如 45" placeholder-class="ph" />
+      </view>
+
+      <view class="frow">
+        <text class="flabel">谁付的</text>
+        <picker mode="selector" range="{{payerNames}}" value="{{form.payerIdx}}" bindchange="onFormPayer">
+          <view class="fpick">{{payerNames[form.payerIdx] || '不记账'}}</view>
+        </picker>
+      </view>
+
+      <view class="frow fcol" wx:if="{{form.payerIdx > 0 && form.amount}}">
+        <text class="flabel">参与平摊（已选 {{form.memberSel.length}} 人）</text>
+        <checkbox-group class="cb-group" bindchange="onFormMembers">
+          <label class="cb {{item.checked ? 'cb-on' : ''}}" wx:for="{{cbMembers}}" wx:key="_id">
+            <checkbox value="{{item.name}}" checked="{{item.checked}}" />{{item.name}}
+          </label>
+        </checkbox-group>
       </view>
 
       <view class="frow">
@@ -91,6 +194,31 @@
       <view class="btns">
         <view class="btn btn-del" wx:if="{{!isNew}}" bindtap="onDelete">删除</view>
         <view class="btn btn-save" bindtap="onSave">保存</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 携带清单弹层 -->
+  <view class="mask" wx:if="{{pack.show}}" bindtap="onClosePack">
+    <view class="sheet pk-sheet" catchtap="noop">
+      <view class="sheet-title">🎒 携带清单 · {{pack.doneCount}}/{{pack.totalCount}}</view>
+      <view class="pk-tip">点一下打勾，长按删除。9月高原早晚冷、紫外线强，厚外套和防晒必带。</view>
+
+      <scroll-view class="pk-scroll" scroll-y enhanced="true" show-scrollbar="{{false}}">
+        <view class="pk-group" wx:for="{{pack.groups}}" wx:key="key" wx:for-item="g">
+          <view class="pk-cat">{{g.label}}</view>
+          <view class="pk-item" wx:for="{{g.items}}" wx:key="_id" wx:for-item="p"
+                bindtap="onTogglePack" bindlongpress="onDelPack" data-id="{{p._id}}">
+            <view class="pk-check {{p.done ? 'pk-check-on' : ''}}">{{p.done ? '✓' : ''}}</view>
+            <text class="pk-text {{p.done ? 'pk-text-done' : ''}}">{{p.text}}</text>
+          </view>
+        </view>
+      </scroll-view>
+
+      <view class="pk-add-row">
+        <input class="finput" value="{{packInput}}" bindinput="onPackInput" confirm-type="done" bindconfirm="onAddPack"
+               placeholder="补充要带的东西，如：充电宝多带一个" placeholder-class="ph" />
+        <view class="pk-add-btn" bindtap="onAddPack">添加</view>
       </view>
     </view>
   </view>

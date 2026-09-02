@@ -1,39 +1,44 @@
-<view class="page">
+<view class="page {{theme === 'dark' ? 'theme-dark' : ''}}">
 
-  <view class="topbar">
+  <view class="topbar anim-in">
     <view class="total-box">
-      <text class="total-num">¥{{total}}</text>
-      <text class="total-label">总支出 · {{expenses.length}} 笔</text>
+      <view class="total-icon">💰</view>
+      <view class="total-info">
+        <text class="total-num">¥{{total}}</text>
+        <text class="total-label">总支出 · {{expenses.length}} 笔</text>
+      </view>
     </view>
     <view class="member-btn" bindtap="toggleMembers">
       <text class="member-ico">👥</text>
-      <text>成员 {{members.length}}</text>
+      <text class="member-num">{{members.length}}</text>
     </view>
   </view>
 
   <view wx:if="{{loading && !expenses.length}}" class="loading-box">加载中…</view>
 
-  <view class="exp-item" wx:for="{{expenses}}" wx:key="_id"
-        bindtap="onEditExp" data-id="{{item._id}}">
+  <view class="exp-item anim-in" wx:for="{{expenses}}" wx:key="_id"
+        bindtap="onEditExp" data-id="{{item._id}}" style="animation-delay: {{index * 55}}ms">
     <view class="exp-date">{{item.date}}</view>
     <view class="exp-body">
       <view class="exp-title">{{item.title}}</view>
-      <view class="exp-meta">{{item.payer}} 付 · {{item.members.length}} 人平摊</view>
+      <view class="exp-meta">
+        <text class="exp-payer">{{item.payer}}</text> 付 · {{item.members.length}} 人平摊
+      </view>
     </view>
     <view class="exp-amount">¥{{item.amount}}</view>
   </view>
 
   <view wx:if="{{!loading && !expenses.length}}" class="empty-box">
-    <view>还没有账单~</view>
+    <view>📝 还没有账单</view>
     <view>点下方按钮记第一笔</view>
   </view>
 
-  <view class="add-btn" bindtap="onAdd">＋ 记一笔</view>
+  <view class="add-btn {{barHidden ? 'fab-hide' : ''}}" bindtap="onAdd">＋</view>
 
   <!-- 记账弹窗 -->
   <view class="mask" wx:if="{{showForm}}" bindtap="closeForm">
     <view class="sheet" catchtap="noop">
-      <view class="sheet-title">{{isNew ? '记一笔' : '编辑账单'}}</view>
+      <view class="sheet-title">{{isNew ? '💰 记一笔' : '✏️ 编辑账单'}}</view>
 
       <view class="frow">
         <text class="flabel">日期</text>
@@ -80,17 +85,40 @@
   <!-- 成员管理弹窗 -->
   <view class="mask" wx:if="{{showMembers}}" bindtap="toggleMembers">
     <view class="sheet" catchtap="noop">
-      <view class="sheet-title">成员管理</view>
-      <view class="mem-tip">把同行的人都加上，记账时选谁付的、谁参与平摊。建议一开始就用大家都会叫的名字。</view>
+      <view class="sheet-title">👥 成员管理</view>
+
+      <!-- 微信一键加入：加入后每次打开自动认出"我" -->
+      <view class="join-box" wx:if="{{!myMember}}">
+        <view class="join-tip">⚡ 微信一键加入，之后打开自动认出你</view>
+        <view class="frow" style="margin-bottom: 0;">
+          <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onJoinAvatar">
+            <image wx:if="{{joinAvatar}}" class="avatar-btn-img" src="{{joinAvatar}}" mode="aspectFill" />
+            <view wx:else class="avatar-btn-ph">😀</view>
+          </button>
+          <input class="finput" type="nickname" value="{{joinName}}" bindinput="onJoinName"
+                 placeholder="点这里，自动带出微信昵称" placeholder-class="ph" />
+          <view class="mem-add" bindtap="onJoinWechat">加入</view>
+        </view>
+      </view>
+      <view class="join-done" wx:else>✅ 你已加入为「{{myMember.name}}」，每次打开自动认出你</view>
+
+      <view class="mem-tip">也可以帮同行的人手动添加，记账时选谁付的、谁参与平摊。</view>
 
       <view class="mem-row" wx:for="{{members}}" wx:key="_id">
-        <text>{{item.name}}</text>
+        <image wx:if="{{item.avatar}}" class="mem-avatar-img" src="{{item.avatar}}" mode="aspectFill" />
+        <view wx:else class="mem-avatar">{{item.name[0]}}</view>
+        <text class="mem-name-text">{{item.name}}</text>
+        <text wx:if="{{myMember && item._id === myMember._id}}" class="mem-me">我</text>
         <text class="mem-del" bindtap="onRemoveMember" data-id="{{item._id}}">删除</text>
       </view>
 
-      <view wx:if="{{!members.length}}" class="loading-box">还没有成员，下面加一个</view>
+      <view wx:if="{{!members.length}}" class="loading-box">还没有成员，先加一个</view>
 
       <view class="frow" style="margin-top: 16rpx;">
+        <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+          <image wx:if="{{tempAvatar}}" class="avatar-btn-img" src="{{tempAvatar}}" mode="aspectFill" />
+          <view wx:else class="avatar-btn-ph">＋</view>
+        </button>
         <input class="finput" value="{{newName}}" bindinput="onNewName"
                placeholder="输入名字或外号，如：老王" placeholder-class="ph" />
         <view class="mem-add" bindtap="onAddMember">添加</view>

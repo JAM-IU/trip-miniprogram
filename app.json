@@ -5,15 +5,16 @@
     "pages/settle/settle"
   ],
   "window": {
-    "navigationBarBackgroundColor": "#2E5A88",
-    "navigationBarTextStyle": "white",
-    "navigationBarTitleText": "滇西北自驾行程",
-    "backgroundColor": "#EDEDF2",
+    "navigationBarBackgroundColor": "#F7F8FC",
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "滇西北自驾",
+    "backgroundColor": "#EEF0F5",
     "backgroundTextStyle": "dark"
   },
   "tabBar": {
-    "color": "#8A8A8A",
-    "selectedColor": "#2E5A88",
+    "custom": true,
+    "color": "#9BA3AF",
+    "selectedColor": "#4F8CFF",
     "backgroundColor": "#ffffff",
     "borderStyle": "black",
     "list": [
