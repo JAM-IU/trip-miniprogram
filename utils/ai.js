@@ -76,12 +76,67 @@ function contentToText(content) {
   return String(content)
 }
 
-// 不同 SDK 形态的返回读取：res.text（新形态）或 choices[0].message.content（OpenAI 形态）
+// 不同 SDK 形态的返回读取：res.text（新形态）/ OpenAI message 形态 / SSE 增量形态 / 原始字符串
 function readResponse(res) {
   if (!res) return ''
+  if (typeof res === 'string') return readStringPayload(res)
   if (typeof res.text === 'string' && res.text) return res.text
-  const c = res.choices && res.choices[0] && res.choices[0].message && res.choices[0].message.content
-  return contentToText(c)
+  const choice = res.choices && res.choices[0]
+  if (choice) {
+    if (choice.message) return contentToText(choice.message.content)
+    if (choice.delta) return contentToText(deltaText(choice.delta))
+  }
+  return ''
+}
+
+// delta 里可能是 content 字符串，也可能分 reasoning_content / content 两段
+function deltaText(delta) {
+  if (!delta) return ''
+  if (typeof delta.content === 'string' && delta.content) return delta.content
+  return ''
+}
+
+// 返回是字符串时的兜底：可能是 JSON 文本，也可能是 SSE 原始流（data: {...} 逐行）
+function readStringPayload(s) {
+  const t = String(s).trim()
+  if (!t) return ''
+  if (t.indexOf('data:') !== 0) return s
+  let out = ''
+  t.split('\n').forEach(function (line) {
+    line = line.trim()
+    if (line.indexOf('data:') !== 0) return
+    const payload = line.slice(5).trim()
+    if (!payload || payload === '[DONE]') return
+    try {
+      const j = JSON.parse(payload)
+      const c = j.choices && j.choices[0]
+      const piece = c && ((c.message && c.message.content) || (c.delta && deltaText(c.delta)))
+      if (piece) out += contentToText(piece)
+    } catch (e) { /* 跳过坏行 */ }
+  })
+  return out
+}
+
+// 调试日志：定位「没解析出行程」用，在控制台打印模型原始返回
+function debugLog(tag, res, rawText) {
+  let preview = ''
+  try { preview = JSON.stringify(res) } catch (e) { preview = String(res) }
+  console.log('[ai:' + tag + '] 返回类型=' + typeof res + ' 原始片段=' + String(preview).slice(0, 600))
+  console.log('[ai:' + tag + '] 提取文本(' + rawText.length + '字)=' + rawText.slice(0, 600))
+}
+
+// 从（可能被截断的）文本里逐条抢救完整的 item JSON 对象（item 字段扁平无嵌套）
+function salvageItems(text) {
+  const out = []
+  const re = /\{[^{}\[\]]*"title"\s*:\s*"[\s\S]*?"[^{}\[\]]*\}/g
+  let m
+  while ((m = re.exec(text)) !== null && out.length < MAX_ITEMS) {
+    try {
+      const o = JSON.parse(m[0])
+      if (o && typeof o === 'object' && o.title) out.push(o)
+    } catch (e) { /* 跳过坏块 */ }
+  }
+  return out
 }
 
 // 从模型输出中稳健地提取并校验行程条目
@@ -95,14 +150,16 @@ function extractItems(raw, totalDays) {
   const s = text.indexOf('{')
   const e = text.lastIndexOf('}')
   if (s < 0 || e <= s) return []
-  let obj = null
+  let list = null
   try {
-    obj = JSON.parse(text.slice(s, e + 1))
+    const obj = JSON.parse(text.slice(s, e + 1))
+    if (obj && Array.isArray(obj.items)) list = obj.items
   } catch (err) {
-    return []
+    list = null
   }
-  const list = obj && obj.items
-  if (!Array.isArray(list)) return []
+  // 整体 JSON 解析失败（常见于长输出被 max_tokens 截断）：逐条抢救完整的 item 对象
+  if (!list) list = salvageItems(text)
+  if (!list.length) return []
   const out = []
   list.forEach(function (it) {
     if (!it || typeof it !== 'object') return
@@ -136,7 +193,9 @@ async function parseTrips(group, text) {
     model: TEXT_MODEL,
     messages: [{ role: 'user', content: buildTextPrompt(group, text) }]
   })
-  return extractItems(readResponse(res), totalDays)
+  const raw = readResponse(res)
+  debugLog('text', res, raw)
+  return extractItems(raw, totalDays)
 }
 
 /**
@@ -153,10 +212,13 @@ async function parseTripsVision(group, text, dataUrls) {
   const res = await model.generateText({
     data: {
       model: VISION_MODEL,
+      max_tokens: 4096,
       messages: [{ role: 'user', content: content }]
     }
   })
-  return extractItems(readResponse(res), totalDays)
+  const raw = readResponse(res)
+  debugLog('vision', res, raw)
+  return extractItems(raw, totalDays)
 }
 
 // ===== 图片工具 =====
