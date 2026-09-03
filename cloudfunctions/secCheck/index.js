@@ -30,6 +30,8 @@ async function checkText(content, openid) {
 }
 
 // ===== 图片校验（图片 ≤1MB，由小程序端压缩后上传云存储中转） =====
+// 注意：校验后图片保留在云存储（sec-tmp/），供 aiParse 识图复用，解析完由 aiParse 删除；
+// 若用户中途放弃会残留临时图，量小可忽略，也可在云存储设置 sec-tmp/ 定期清理
 async function checkImage(fileID, openid) {
   if (!fileID) return { pass: false, reason: 'empty' }
   let buffer = null
@@ -60,9 +62,6 @@ async function checkImage(fileID, openid) {
       console.warn('imgSecCheck unavailable', e2)
       return { pass: true, unchecked: true, reason: 'check-unavailable' }
     }
-  } finally {
-    // 临时安检图片用完即删，不占用存储
-    cloud.deleteFile({ fileList: [fileID] }).catch(function () {})
   }
 }
 

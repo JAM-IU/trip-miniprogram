@@ -1,6 +1,6 @@
 // AI 攻略解析：把粘贴的攻略文字 / 攻略截图整理成结构化行程
 // 纯文本走 wx.cloud.extend.AI 体验模型 hunyuan-v3/hy3（免费，基础库 3.15.1+）
-// 带截图走多模态模型 glm-5v-turbo（售卖模型，需在云开发控制台 AI+ → 模型管理开通）
+// 带截图走 aiParse 云函数（调用自己配置的 OpenAI 兼容视觉模型，Key 在函数环境变量里）
 const MAX_ITEMS = 40
 const MAX_IMAGES = 4
 // imgSecCheck 限制单张 1MB，留点余量压到 900KB 内
@@ -8,8 +8,6 @@ const IMG_LIMIT = 900 * 1024
 
 const TEXT_PROVIDER = 'hunyuan-v3'
 const TEXT_MODEL = 'hy3'
-const VISION_PROVIDER = 'cloudbase'
-const VISION_MODEL = 'glm-5v-turbo'
 
 // 当前环境是否支持 AI 能力（低版本微信没有 extend.AI）
 function aiSupported() {
@@ -203,29 +201,27 @@ async function parseTrips(group, text) {
 }
 
 /**
- * 截图（可混合补充文字）解析（多模态模型 glm-5v-turbo）
- * @param {string[]} dataUrls 图片 data URL 列表（data:image/jpeg;base64,...）
+ * 截图（可混合补充文字）解析：走 aiParse 云函数（自带视觉模型）
+ * @param {string[]} fileIDs 攻略截图的云存储 fileID 列表（安检上传时获得，解析完由云函数删除）
  */
-async function parseTripsVision(group, text, dataUrls) {
+async function parseTripsVision(group, text, fileIDs) {
   const totalDays = (group && group.totalDays) || 7
-  const model = wx.cloud.extend.AI.createModel(VISION_PROVIDER)
-  const content = [{ type: 'text', text: buildVisionPrompt(group, text, dataUrls.length) }]
-  dataUrls.forEach(function (u) {
-    content.push({ type: 'image_url', image_url: { url: u } })
+  const ids = fileIDs || []
+  const res = await wx.cloud.callFunction({
+    name: 'aiParse',
+    data: {
+      prompt: buildVisionPrompt(group, text, ids.length),
+      fileIDs: ids
+    }
   })
-  // 注意：generateText 的参数就是请求体本身（不同于 streamText 的 { data } 包装）
-  const res = await model.generateText({
-    model: VISION_MODEL,
-    max_tokens: 4096,
-    messages: [{ role: 'user', content: content }]
-  })
-  // 网关错误时 SDK 不抛异常而是返回错误体（如 {code, message}），主动抛出让上层提示
-  if (res && res.code) {
-    console.log('[ai:vision] 网关错误：', res.code, res.message)
-    throw new Error(res.message || String(res.code))
+  const r = res && res.result
+  if (!r) throw new Error('aiParse 无返回')
+  if (r.error) {
+    console.log('[ai:vision] 云函数错误：', r.error, r.detail || '')
+    throw new Error(String(r.error) + (r.detail ? '：' + r.detail : ''))
   }
-  const raw = readResponse(res)
-  debugLog('vision', res, raw)
+  const raw = String(r.text || '')
+  debugLog('vision', r, raw)
   return extractItems(raw, totalDays)
 }
 
@@ -255,23 +251,9 @@ async function compressIfNeeded(path, limit) {
   return { path: src, size: size }
 }
 
-function toDataUrl(path) {
-  return new Promise(function (resolve, reject) {
-    wx.getFileSystemManager().readFile({
-      filePath: path,
-      encoding: 'base64',
-      success: function (res) {
-        resolve('data:image/jpeg;base64,' + res.data)
-      },
-      fail: reject
-    })
-  })
-}
-
 /**
- * 选攻略截图（相册）→ 压到 900KB 内 → 转 dataUrl
- * 注意：dataUrl 很大（约 1MB+/张），调用方不要放进 setData
- * @returns {Promise<Array<{path, dataUrl, size}>>} 用户取消时 reject，需自行识别 cancel
+ * 选攻略截图（相册）→ 压到 900KB 内
+ * @returns {Promise<Array<{path, size}>>} 用户取消时 reject，需自行识别 cancel
  */
 async function pickGuideImages(maxCount) {
   const res = await new Promise(function (resolve, reject) {
@@ -288,8 +270,7 @@ async function pickGuideImages(maxCount) {
   const out = []
   for (let i = 0; i < files.length; i++) {
     const c = await compressIfNeeded(files[i].tempFilePath, IMG_LIMIT)
-    const dataUrl = await toDataUrl(c.path)
-    out.push({ path: c.path, dataUrl: dataUrl, size: c.size })
+    out.push({ path: c.path, size: c.size })
   }
   return out
 }
@@ -309,6 +290,5 @@ module.exports = {
   parseTripsVision: parseTripsVision,
   pickGuideImages: pickGuideImages,
   uploadForCheck: uploadForCheck,
-  MAX_IMAGES: MAX_IMAGES,
-  VISION_MODEL: VISION_MODEL
+  MAX_IMAGES: MAX_IMAGES
 }

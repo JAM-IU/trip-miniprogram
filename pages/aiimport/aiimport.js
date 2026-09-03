@@ -17,7 +17,7 @@ Page({
     dayLabels: [],
     dateLabels: [],
     text: '',
-    images: [], // 渲染用：[{ path, kb }]，大图 dataUrl 存在 this._imgData
+    images: [], // 渲染用：[{ path, kb }]
     parsing: false,
     items: [],   // 预览条目（带稳定 key）
     groups: [],  // 按天分组后的展示结构
@@ -30,7 +30,6 @@ Page({
       wx.reLaunch({ url: '/pages/group/group' })
       return
     }
-    this._imgData = {} // path -> dataUrl（体积大，不进 setData）
     const group = wx.getStorageSync('currentGroup') || {}
     const totalDays = group.totalDays || 7
     this.setData({
@@ -89,7 +88,6 @@ Page({
       if (!picked.length) return
       const imgs = this.data.images.slice()
       picked.forEach((p) => {
-        this._imgData[p.path] = p.dataUrl
         imgs.push({ path: p.path, kb: Math.max(1, Math.round(p.size / 1024)) })
       })
       this.setData({ images: imgs })
@@ -110,8 +108,7 @@ Page({
   onDelImg(e) {
     const idx = Number(e.currentTarget.dataset.index)
     const imgs = this.data.images.slice()
-    const removed = imgs.splice(idx, 1)[0]
-    if (removed) delete this._imgData[removed.path]
+    imgs.splice(idx, 1)
     this.setData({ images: imgs })
   },
 
@@ -154,10 +151,12 @@ Page({
         }
       }
 
-      // 2) 图片逐张安全校验（上传云存储中转，云函数检查完自动删除）
+      // 2) 图片逐张安全校验（上传云存储中转，fileID 留给 aiParse 识图复用，解析完由 aiParse 删除）
+      const fileIDs = []
       for (let i = 0; i < images.length; i++) {
         wx.showLoading({ title: '校验第 ' + (i + 1) + ' 张图…', mask: true })
         const fileID = await ai.uploadForCheck(images[i].path)
+        fileIDs.push(fileID)
         const sec = await wx.cloud.callFunction({
           name: 'secCheck',
           data: { type: 'img', fileID: fileID }
@@ -174,12 +173,11 @@ Page({
         }
       }
 
-      // 3) AI 解析（有图走多模态，纯文字走体验模型）
+      // 3) AI 解析（有图走 aiParse 云函数识图，纯文字走体验模型）
       const hasImg = images.length > 0
       wx.showLoading({ title: hasImg ? 'AI 识图中，约 20~40 秒…' : 'AI 解析中…', mask: true })
-      const dataUrls = images.map((x) => this._imgData[x.path])
       const items = hasImg
-        ? await ai.parseTripsVision(this.data.group, text, dataUrls)
+        ? await ai.parseTripsVision(this.data.group, text, fileIDs)
         : await ai.parseTrips(this.data.group, text)
       wx.hideLoading()
 
@@ -206,14 +204,14 @@ Page({
       const msg = dbUtil.errText(e)
       if (/not exist|FUNCTION_NOT_FOUND|-404|未找到/i.test(msg)) {
         wx.showModal({
-          title: '缺少云函数 secCheck',
-          content: '请先在开发者工具里上传部署云函数 secCheck（右键 cloudfunctions/secCheck → 上传并部署）',
+          title: '缺少云函数',
+          content: '请在开发者工具里部署云函数 secCheck 和 aiParse（右键 cloudfunctions 下对应目录 → 上传并部署：云端安装依赖）',
           showCancel: false
         })
-      } else if (/model|glm|开通|enable|support|not.?found/i.test(msg) && images.length) {
+      } else if (/no-key|AI_API_KEY|未配置模型 ?Key/i.test(msg)) {
         wx.showModal({
-          title: '识图模型未开通',
-          content: '攻略截图识别需要视觉模型 glm-5v-turbo：\n云开发控制台 → AI+ → 模型管理 → 开通 glm-5v-turbo（纯文字导入不需要）\n\n原始错误：' + msg,
+          title: '模型 Key 未配置',
+          content: '截图识别由云函数 aiParse 调用视觉模型，请配置：云开发控制台 → 云函数 → aiParse → 配置 → 环境变量添加 AI_API_KEY（智谱 Key），并把执行超时改为 60 秒',
           showCancel: false
         })
       } else if (/storage|upload|权限|permission/i.test(msg)) {

@@ -21,7 +21,7 @@
           <view class="img-add-txt">攻略截图</view>
         </view>
       </view>
-      <view class="img-tip" wx:if="{{images.length}}">已选 {{images.length}}/4 张，识别截图需要开通视觉模型（见部署教程）</view>
+      <view class="img-tip" wx:if="{{images.length}}">已选 {{images.length}}/4 张，截图识别由云函数调视觉模型（需配 Key，见部署教程）</view>
 
       <textarea class="ta {{images.length ? 'ta-short' : ''}}" value="{{text}}" bindinput="onInput" maxlength="3000"
                 placeholder="把小红书 / 马蜂窝 / 朋友发的攻略文字粘贴到这里（也可以只加上面的攻略截图）…&#10;&#10;例如：&#10;D1 下午到大理，机场取车，晚上逛大理古城吃烤乳扇&#10;D2 环洱海自驾，中午喜洲古镇吃粑粑，傍晚看日落"
