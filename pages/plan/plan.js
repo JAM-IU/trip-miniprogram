@@ -290,6 +290,11 @@ Page({
     }
   },
 
+  // 跳 AI 行程导入页
+  onAiImport() {
+    wx.navigateTo({ url: '/pages/aiimport/aiimport' })
+  },
+
   // 空行程时一键载入滇西北示例
   async onSeedSample() {
     if (!this.data.gid) return

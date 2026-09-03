@@ -1,0 +1,76 @@
+<view class="page {{theme === 'dark' ? 'theme-dark' : ''}}">
+
+  <!-- ===== 输入阶段 ===== -->
+  <block wx:if="{{stage === 'input'}}">
+    <view class="ai-hero anim-pop">
+      <view class="ai-hero-deco">✨</view>
+      <view class="ai-hero-title">AI 行程导入</view>
+      <view class="ai-hero-sub">粘贴攻略文字，自动整理到「{{groupName}}」</view>
+    </view>
+
+    <view class="ta-card anim-in">
+      <textarea class="ta" value="{{text}}" bindinput="onInput" maxlength="3000"
+                placeholder="把小红书 / 马蜂窝 / 朋友发的攻略文字粘贴到这里…&#10;&#10;例如：&#10;D1 下午到大理，机场取车，晚上逛大理古城吃烤乳扇&#10;D2 环洱海自驾，中午喜洲古镇吃粑粑，傍晚看日落"
+                placeholder-class="ph" />
+      <view class="ta-foot">
+        <text class="ta-count">{{text.length}}/3000</text>
+        <view class="paste-btn" bindtap="onPaste">📋 粘贴</view>
+      </view>
+    </view>
+
+    <view class="go-btn {{parsing ? 'go-btn-busy' : ''}}" bindtap="onParse">
+      {{parsing ? 'AI 解析中，约 10~30 秒…' : '✨ 开始解析'}}
+    </view>
+    <view class="safe-tip">文字仅用于整理个人行程 · 解析结果由 AI 生成，导入前请核对</view>
+  </block>
+
+  <!-- ===== 预览阶段 ===== -->
+  <block wx:if="{{stage === 'preview'}}">
+    <view class="pv-head anim-in">
+      <view class="pv-title">解析出 {{items.length}} 条安排</view>
+      <view class="pv-sub">内容由 AI 生成：◀▶ 调天数 · 点标记换级别 · 可删除，核对后再导入</view>
+    </view>
+
+    <view class="pv-day anim-in" wx:for="{{groups}}" wx:key="day" wx:for-item="g"
+          style="animation-delay: {{index * 60}}ms">
+      <view class="pv-day-head">
+        <text class="pv-day-label">{{g.label}}</text>
+        <text class="pv-day-date">{{g.date}}</text>
+      </view>
+
+      <view class="pv-item" wx:for="{{g.items}}" wx:key="key" wx:for-item="s">
+        <view class="pv-line1">
+          <text wx:if="{{s.time}}" class="pv-time">{{s.time}}</text>
+          <text class="pv-name">{{s.title}}</text>
+          <text wx:if="{{s.fee}}" class="pv-fee {{s.fee === '免费' ? 'pv-fee-free' : ''}}">{{s.fee}}</text>
+        </view>
+        <view class="pv-desc" wx:if="{{s.desc}}">{{s.desc}}</view>
+        <view class="pv-ops">
+          <view class="pv-daymove">
+            <text class="pv-mv" catchtap="onMoveDay" data-key="{{s.key}}" data-dir="-1">◀</text>
+            <text class="pv-mvday">D{{s.day}}</text>
+            <text class="pv-mv" catchtap="onMoveDay" data-key="{{s.key}}" data-dir="1">▶</text>
+          </view>
+          <view class="pv-level lv-{{s.level}}" catchtap="onCycleLevel" data-key="{{s.key}}">
+            {{s.level === 'must' ? '必去' : (s.level === 'rec' ? '推荐' : '可选')}}
+          </view>
+          <view class="pv-del" catchtap="onDel" data-key="{{s.key}}">删除</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="pv-empty" wx:if="{{!items.length}}">
+      <view class="pv-empty-emoji">🫥</view>
+      <view>没有可导入的安排了</view>
+      <view class="pv-empty-btn" bindtap="onReInput">重新粘贴攻略</view>
+    </view>
+
+    <view class="pv-actions" wx:if="{{items.length}}">
+      <view class="pva-btn pva-ghost" bindtap="onReInput">重新粘贴</view>
+      <view class="pva-btn pva-main {{importing ? 'pva-busy' : ''}}" bindtap="onImport">
+        {{importing ? '导入中…' : '确认导入 ' + items.length + ' 条'}}
+      </view>
+    </view>
+  </block>
+
+</view>

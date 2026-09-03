@@ -2,7 +2,8 @@
   "pages": [
     "pages/plan/plan",
     "pages/group/group",
-    "pages/photos/photos"
+    "pages/photos/photos",
+    "pages/aiimport/aiimport"
   ],
   "window": {
     "navigationBarBackgroundColor": "#F7F8FC",

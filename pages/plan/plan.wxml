@@ -109,10 +109,12 @@
     <view>🗺️</view>
     <view>暂无行程，点右下角按钮添加第一条</view>
     <view class="empty-seed" bindtap="onSeedSample">或点此载入「滇西北示例行程」</view>
+    <view class="empty-seed" bindtap="onAiImport">或粘贴攻略，让 AI 帮你整理行程 ✨</view>
   </view>
 
-  <!-- 悬浮工具：主题（行程组入口在底部 dock 栏） -->
+  <!-- 悬浮工具：AI 导入 + 主题（行程组入口在底部 dock 栏） -->
   <view class="float-tools {{barHidden ? 'fab-hide' : ''}}">
+    <view class="ft-btn" bindtap="onAiImport">✨</view>
     <view class="ft-btn" bindtap="onCycleTheme">{{themeIcon}}</view>
   </view>
 
