@@ -213,7 +213,7 @@ Page({
       } else if (/model|glm|开通|enable|support|not.?found/i.test(msg) && images.length) {
         wx.showModal({
           title: '识图模型未开通',
-          content: '攻略截图识别需要视觉模型 glm-5v-turbo：\n云开发控制台 → AI+ → 模型管理 → 开通 glm-5v-turbo（纯文字导入不需要）',
+          content: '攻略截图识别需要视觉模型 glm-5v-turbo：\n云开发控制台 → AI+ → 模型管理 → 开通 glm-5v-turbo（纯文字导入不需要）\n\n原始错误：' + msg,
           showCancel: false
         })
       } else if (/storage|upload|权限|permission/i.test(msg)) {
