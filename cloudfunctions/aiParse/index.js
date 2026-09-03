@@ -5,6 +5,7 @@
 //   AI_API_KEY   模型 API Key（必填，智谱 bigmodel.cn 免费注册领取）
 //   AI_BASE_URL  OpenAI 兼容接口地址（不含 /chat/completions），默认 https://open.bigmodel.cn/api/paas/v4
 //   AI_MODEL     模型名，默认 glm-4v-flash（智谱免费视觉模型）
+//   AI_MAX_TOKENS 输出上限，默认 1024（glm-4v-flash 上限就是 1024；换别家模型可调大）
 //
 // 注意：请把本函数「执行超时时间」改为 60 秒（默认 3 秒不够识图用）
 const cloud = require('wx-server-sdk')
@@ -88,7 +89,7 @@ exports.main = async (event) => {
   try {
     resp = await postJson(baseURL + '/chat/completions', { Authorization: 'Bearer ' + apiKey }, {
       model: model,
-      max_tokens: 4096,
+      max_tokens: parseInt(process.env.AI_MAX_TOKENS, 10) || 1024,
       messages: [{ role: 'user', content: content }]
     })
   } catch (e) {
