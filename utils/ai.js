@@ -1,18 +1,24 @@
-// AI 攻略解析：把粘贴的旅行攻略文字整理成结构化行程
-// 走小程序端 wx.cloud.extend.AI（基础库 3.15.1+），体验模型 hunyuan-v3/hy3 免费
+// AI 攻略解析：把粘贴的攻略文字 / 攻略截图整理成结构化行程
+// 纯文本走 wx.cloud.extend.AI 体验模型 hunyuan-v3/hy3（免费，基础库 3.15.1+）
+// 带截图走多模态模型 glm-5v-turbo（售卖模型，需在云开发控制台 AI+ → 模型管理开通）
 const MAX_ITEMS = 40
+const MAX_IMAGES = 4
+// imgSecCheck 限制单张 1MB，留点余量压到 900KB 内
+const IMG_LIMIT = 900 * 1024
+
+const TEXT_PROVIDER = 'hunyuan-v3'
+const TEXT_MODEL = 'hy3'
+const VISION_PROVIDER = 'cloudbase'
+const VISION_MODEL = 'glm-5v-turbo'
 
 // 当前环境是否支持 AI 能力（低版本微信没有 extend.AI）
 function aiSupported() {
   return !!(wx.cloud && wx.cloud.extend && wx.cloud.extend.AI && wx.cloud.extend.AI.createModel)
 }
 
-function buildPrompt(group, text) {
-  const totalDays = (group && group.totalDays) || 7
-  const cities = ((group && group.cities) || []).join('、') || '未知'
+// ===== Prompt =====
+function jsonRules(totalDays) {
   return [
-    '你是旅行行程整理助手。把下面这段旅行攻略/笔记整理成结构化行程，只输出 JSON。',
-    '',
     '要求：',
     '1. 只输出一个 JSON 对象，不要输出任何解释文字，不要用 markdown 代码块包裹',
     '2. JSON 格式：{"items":[{"day":1,"time":"09:00","title":"名称","desc":"一句话说明","fee":"费用说明","level":"rec"}]}',
@@ -20,8 +26,18 @@ function buildPrompt(group, text) {
     '4. time 用 HH:MM 24 小时制；攻略写的是上午/下午/晚上/全天等就照抄原文；没有时间就留空字符串',
     '5. title 是景点或活动名称，不超过 15 字；desc 是一句话说明，不超过 40 字；fee 是费用说明（如 免费 / 约45元），没有就留空字符串',
     '6. level 只能是 must（交通/住宿/核心景点等关键安排）、rec（推荐）、opt（可选/待定）之一，拿不准用 rec',
-    '7. 忽略广告、心情随笔、穿搭拍照心得等与行程安排无关的内容',
-    '8. 最多提取 ' + MAX_ITEMS + ' 条，宁缺毋滥',
+    '7. 忽略广告、评论区、心情随笔、穿搭拍照心得等与行程安排无关的内容',
+    '8. 最多提取 ' + MAX_ITEMS + ' 条，宁缺毋滥'
+  ].join('\n')
+}
+
+function buildTextPrompt(group, text) {
+  const totalDays = (group && group.totalDays) || 7
+  const cities = ((group && group.cities) || []).join('、') || '未知'
+  return [
+    '你是旅行行程整理助手。把下面这段旅行攻略/笔记整理成结构化行程，只输出 JSON。',
+    '',
+    jsonRules(totalDays),
     '',
     '旅行背景：目的地 ' + cities + '，共 ' + totalDays + ' 天行程。',
     '',
@@ -30,6 +46,23 @@ function buildPrompt(group, text) {
   ].join('\n')
 }
 
+function buildVisionPrompt(group, text, imgCount) {
+  const totalDays = (group && group.totalDays) || 7
+  const cities = ((group && group.cities) || []).join('、') || '未知'
+  const lines = [
+    '你是旅行行程整理助手。下面给你 ' + imgCount + ' 张旅行攻略截图' + (text ? '和一段补充文字' : '') + '，把其中的行程安排整理成结构化行程，只输出 JSON。',
+    '',
+    jsonRules(totalDays),
+    '',
+    '旅行背景：目的地 ' + cities + '，共 ' + totalDays + ' 天行程。'
+  ]
+  if (text) {
+    lines.push('', '补充文字：', text)
+  }
+  return lines.join('\n')
+}
+
+// ===== 结果提取 =====
 // 模型返回的 content 可能是字符串，也可能是分片数组
 function contentToText(content) {
   if (!content) return ''
@@ -41,6 +74,14 @@ function contentToText(content) {
     }).join('')
   }
   return String(content)
+}
+
+// 不同 SDK 形态的返回读取：res.text（新形态）或 choices[0].message.content（OpenAI 形态）
+function readResponse(res) {
+  if (!res) return ''
+  if (typeof res.text === 'string' && res.text) return res.text
+  const c = res.choices && res.choices[0] && res.choices[0].message && res.choices[0].message.content
+  return contentToText(c)
 }
 
 // 从模型输出中稳健地提取并校验行程条目
@@ -84,23 +125,120 @@ function extractItems(raw, totalDays) {
   return out.slice(0, MAX_ITEMS)
 }
 
+// ===== 解析入口 =====
 /**
- * 调 AI 模型解析攻略文字
- * @param {object} group 当前行程组（用于提供目的地/天数上下文）
- * @param {string} text 攻略原文
- * @returns {Promise<Array>} 校验过的行程条目（可能为空数组，由调用方提示重试）
+ * 纯文本解析（免费体验模型 hy3）
  */
 async function parseTrips(group, text) {
-  const model = wx.cloud.extend.AI.createModel('hunyuan-v3')
+  const totalDays = (group && group.totalDays) || 7
+  const model = wx.cloud.extend.AI.createModel(TEXT_PROVIDER)
   const res = await model.generateText({
-    model: 'hy3',
-    messages: [{ role: 'user', content: buildPrompt(group, text) }]
+    model: TEXT_MODEL,
+    messages: [{ role: 'user', content: buildTextPrompt(group, text) }]
   })
-  const content = res && res.choices && res.choices[0] && res.choices[0].message && res.choices[0].message.content
-  return extractItems(content, (group && group.totalDays) || 7)
+  return extractItems(readResponse(res), totalDays)
+}
+
+/**
+ * 截图（可混合补充文字）解析（多模态模型 glm-5v-turbo）
+ * @param {string[]} dataUrls 图片 data URL 列表（data:image/jpeg;base64,...）
+ */
+async function parseTripsVision(group, text, dataUrls) {
+  const totalDays = (group && group.totalDays) || 7
+  const model = wx.cloud.extend.AI.createModel(VISION_PROVIDER)
+  const content = [{ type: 'text', text: buildVisionPrompt(group, text, dataUrls.length) }]
+  dataUrls.forEach(function (u) {
+    content.push({ type: 'image_url', image_url: { url: u } })
+  })
+  const res = await model.generateText({
+    data: {
+      model: VISION_MODEL,
+      messages: [{ role: 'user', content: content }]
+    }
+  })
+  return extractItems(readResponse(res), totalDays)
+}
+
+// ===== 图片工具 =====
+function fileSize(path) {
+  try {
+    const st = wx.getFileSystemManager().statSync(path)
+    return (st && st.size) || 0
+  } catch (e) {
+    return 0
+  }
+}
+
+// 超过 limit 就逐级降质量压缩（输出 jpg）
+async function compressIfNeeded(path, limit) {
+  let src = path
+  let size = fileSize(src)
+  let quality = 80
+  while (size > limit && quality >= 20) {
+    const res = await new Promise(function (resolve, reject) {
+      wx.compressImage({ src: src, quality: quality, success: resolve, fail: reject })
+    })
+    src = res.tempFilePath
+    size = fileSize(src)
+    quality -= 20
+  }
+  return { path: src, size: size }
+}
+
+function toDataUrl(path) {
+  return new Promise(function (resolve, reject) {
+    wx.getFileSystemManager().readFile({
+      filePath: path,
+      encoding: 'base64',
+      success: function (res) {
+        resolve('data:image/jpeg;base64,' + res.data)
+      },
+      fail: reject
+    })
+  })
+}
+
+/**
+ * 选攻略截图（相册）→ 压到 900KB 内 → 转 dataUrl
+ * 注意：dataUrl 很大（约 1MB+/张），调用方不要放进 setData
+ * @returns {Promise<Array<{path, dataUrl, size}>>} 用户取消时 reject，需自行识别 cancel
+ */
+async function pickGuideImages(maxCount) {
+  const res = await new Promise(function (resolve, reject) {
+    wx.chooseMedia({
+      count: Math.min(maxCount || MAX_IMAGES, MAX_IMAGES),
+      mediaType: ['image'],
+      sourceType: ['album'],
+      sizeType: ['compressed'],
+      success: resolve,
+      fail: reject
+    })
+  })
+  const files = res.tempFiles || []
+  const out = []
+  for (let i = 0; i < files.length; i++) {
+    const c = await compressIfNeeded(files[i].tempFilePath, IMG_LIMIT)
+    const dataUrl = await toDataUrl(c.path)
+    out.push({ path: c.path, dataUrl: dataUrl, size: c.size })
+  }
+  return out
+}
+
+// 上传临时图到云存储供 imgSecCheck 使用（云函数检查完会删除）
+async function uploadForCheck(path) {
+  const res = await wx.cloud.uploadFile({
+    cloudPath: 'sec-tmp/' + Date.now() + '-' + Math.floor(Math.random() * 10000) + '.jpg',
+    filePath: path
+  })
+  return res.fileID
 }
 
 module.exports = {
   aiSupported: aiSupported,
-  parseTrips: parseTrips
+  parseTrips: parseTrips,
+  parseTripsVision: parseTripsVision,
+  pickGuideImages: pickGuideImages,
+  uploadForCheck: uploadForCheck,
+  MAX_IMAGES: MAX_IMAGES,
+  VISION_MODEL: VISION_MODEL
 }

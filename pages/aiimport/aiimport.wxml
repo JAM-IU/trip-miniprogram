@@ -9,8 +9,22 @@
     </view>
 
     <view class="ta-card anim-in">
-      <textarea class="ta" value="{{text}}" bindinput="onInput" maxlength="3000"
-                placeholder="把小红书 / 马蜂窝 / 朋友发的攻略文字粘贴到这里…&#10;&#10;例如：&#10;D1 下午到大理，机场取车，晚上逛大理古城吃烤乳扇&#10;D2 环洱海自驾，中午喜洲古镇吃粑粑，傍晚看日落"
+      <!-- 攻略截图 -->
+      <view class="img-row">
+        <view class="img-cell" wx:for="{{images}}" wx:key="path">
+          <image class="img-shot" src="{{item.path}}" mode="aspectFill"
+                 bindtap="onPreviewImg" data-index="{{index}}" />
+          <view class="img-x" catchtap="onDelImg" data-index="{{index}}">×</view>
+        </view>
+        <view class="img-add" wx:if="{{images.length < 4}}" bindtap="onPickImgs">
+          <view class="img-add-ico">＋</view>
+          <view class="img-add-txt">攻略截图</view>
+        </view>
+      </view>
+      <view class="img-tip" wx:if="{{images.length}}">已选 {{images.length}}/4 张，识别截图需要开通视觉模型（见部署教程）</view>
+
+      <textarea class="ta {{images.length ? 'ta-short' : ''}}" value="{{text}}" bindinput="onInput" maxlength="3000"
+                placeholder="把小红书 / 马蜂窝 / 朋友发的攻略文字粘贴到这里（也可以只加上面的攻略截图）…&#10;&#10;例如：&#10;D1 下午到大理，机场取车，晚上逛大理古城吃烤乳扇&#10;D2 环洱海自驾，中午喜洲古镇吃粑粑，傍晚看日落"
                 placeholder-class="ph" />
       <view class="ta-foot">
         <text class="ta-count">{{text.length}}/3000</text>

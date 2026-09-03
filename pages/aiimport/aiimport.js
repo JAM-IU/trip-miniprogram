@@ -1,4 +1,4 @@
-// AI 行程导入：粘贴攻略 → 安全校验 → AI 解析 → 预览调整 → 批量入库
+// AI 行程导入：粘贴攻略 / 攻略截图 → 安全校验 → AI 解析 → 预览调整 → 批量入库
 const dbUtil = require('../../utils/db')
 const seed = require('../../utils/seed')
 const ai = require('../../utils/ai')
@@ -17,6 +17,7 @@ Page({
     dayLabels: [],
     dateLabels: [],
     text: '',
+    images: [], // 渲染用：[{ path, kb }]，大图 dataUrl 存在 this._imgData
     parsing: false,
     items: [],   // 预览条目（带稳定 key）
     groups: [],  // 按天分组后的展示结构
@@ -29,6 +30,7 @@ Page({
       wx.reLaunch({ url: '/pages/group/group' })
       return
     }
+    this._imgData = {} // path -> dataUrl（体积大，不进 setData）
     const group = wx.getStorageSync('currentGroup') || {}
     const totalDays = group.totalDays || 7
     this.setData({
@@ -73,12 +75,53 @@ Page({
     })
   },
 
+  // ===== 攻略截图 =====
+  async onPickImgs() {
+    const remain = ai.MAX_IMAGES - this.data.images.length
+    if (remain <= 0) {
+      wx.showToast({ title: '最多 ' + ai.MAX_IMAGES + ' 张截图', icon: 'none' })
+      return
+    }
+    wx.showLoading({ title: '处理图片…', mask: true })
+    try {
+      const picked = await ai.pickGuideImages(remain)
+      wx.hideLoading()
+      if (!picked.length) return
+      const imgs = this.data.images.slice()
+      picked.forEach((p) => {
+        this._imgData[p.path] = p.dataUrl
+        imgs.push({ path: p.path, kb: Math.max(1, Math.round(p.size / 1024)) })
+      })
+      this.setData({ images: imgs })
+    } catch (e) {
+      wx.hideLoading()
+      const msg = dbUtil.errText(e)
+      if (/cancel/i.test(msg)) return // 用户取消选图
+      wx.showToast({ title: '图片处理失败', icon: 'none' })
+    }
+  },
+
+  onPreviewImg(e) {
+    const idx = Number(e.currentTarget.dataset.index)
+    const urls = this.data.images.map(function (x) { return x.path })
+    wx.previewImage({ current: urls[idx] || urls[0], urls: urls })
+  },
+
+  onDelImg(e) {
+    const idx = Number(e.currentTarget.dataset.index)
+    const imgs = this.data.images.slice()
+    const removed = imgs.splice(idx, 1)[0]
+    if (removed) delete this._imgData[removed.path]
+    this.setData({ images: imgs })
+  },
+
   // ===== 解析 =====
   async onParse() {
     if (this.data.parsing) return
     const text = (this.data.text || '').trim()
-    if (text.length < 20) {
-      wx.showToast({ title: '内容太短，先粘贴攻略文字', icon: 'none' })
+    const images = this.data.images
+    if (text.length < 20 && !images.length) {
+      wx.showToast({ title: '粘贴攻略文字或添加截图', icon: 'none' })
       return
     }
     if (!ai.aiSupported()) {
@@ -93,31 +136,57 @@ Page({
     this.setData({ parsing: true })
     wx.showLoading({ title: '安全校验中…', mask: true })
     try {
-      // 1) 内容安全校验（微信要求：用户生成内容先过审）
-      const sec = await wx.cloud.callFunction({
-        name: 'secCheck',
-        data: { content: text }
-      })
-      const r = sec && sec.result
-      if (!r || !r.pass) {
-        wx.hideLoading()
-        wx.showModal({
-          title: '内容未通过审核',
-          content: '这段文字包含不适合的内容，请修改后再试',
-          showCancel: false
+      // 1) 文本安全校验（有实质文字才查）
+      if (text.length >= 20) {
+        const sec = await wx.cloud.callFunction({
+          name: 'secCheck',
+          data: { content: text }
         })
-        return
+        const r = sec && sec.result
+        if (!r || !r.pass) {
+          wx.hideLoading()
+          wx.showModal({
+            title: '内容未通过审核',
+            content: '这段文字包含不适合的内容，请修改后再试',
+            showCancel: false
+          })
+          return
+        }
       }
 
-      // 2) AI 解析
-      wx.showLoading({ title: 'AI 解析中…', mask: true })
-      const items = await ai.parseTrips(this.data.group, text)
+      // 2) 图片逐张安全校验（上传云存储中转，云函数检查完自动删除）
+      for (let i = 0; i < images.length; i++) {
+        wx.showLoading({ title: '校验第 ' + (i + 1) + ' 张图…', mask: true })
+        const fileID = await ai.uploadForCheck(images[i].path)
+        const sec = await wx.cloud.callFunction({
+          name: 'secCheck',
+          data: { type: 'img', fileID: fileID }
+        })
+        const r = sec && sec.result
+        if (!r || !r.pass) {
+          wx.hideLoading()
+          wx.showModal({
+            title: '第 ' + (i + 1) + ' 张图未通过审核',
+            content: '这张截图包含不适合的内容，请删除后再试',
+            showCancel: false
+          })
+          return
+        }
+      }
+
+      // 3) AI 解析（有图走多模态，纯文字走体验模型）
+      const hasImg = images.length > 0
+      wx.showLoading({ title: hasImg ? 'AI 识图中，约 20~40 秒…' : 'AI 解析中…', mask: true })
+      const dataUrls = images.map((x) => this._imgData[x.path])
+      const items = hasImg
+        ? await ai.parseTripsVision(this.data.group, text, dataUrls)
+        : await ai.parseTrips(this.data.group, text)
       wx.hideLoading()
 
       if (!items.length) {
         wx.showModal({
           title: '没解析出行程',
-          content: 'AI 没能从这段文字里整理出有效安排，可以换一段更具体的攻略（包含每天去哪、时间等）再试',
+          content: 'AI 没能整理出有效安排，可以换一段更具体的攻略（包含每天去哪、时间等），或换更清晰的截图再试',
           showCancel: false
         })
         return
@@ -139,6 +208,18 @@ Page({
         wx.showModal({
           title: '缺少云函数 secCheck',
           content: '请先在开发者工具里上传部署云函数 secCheck（右键 cloudfunctions/secCheck → 上传并部署）',
+          showCancel: false
+        })
+      } else if (/model|glm|开通|enable|support|not.?found/i.test(msg) && images.length) {
+        wx.showModal({
+          title: '识图模型未开通',
+          content: '攻略截图识别需要视觉模型 glm-5v-turbo：\n云开发控制台 → AI+ → 模型管理 → 开通 glm-5v-turbo（纯文字导入不需要）',
+          showCancel: false
+        })
+      } else if (/storage|upload|权限|permission/i.test(msg)) {
+        wx.showModal({
+          title: '图片上传失败',
+          content: '截图需要临时上传云存储做安全校验，请检查云开发存储权限后重试',
           showCancel: false
         })
       } else {
