@@ -193,6 +193,7 @@ async function parseTrips(group, text) {
     model: TEXT_MODEL,
     messages: [{ role: 'user', content: buildTextPrompt(group, text) }]
   })
+  if (res && res.code) throw new Error(res.message || String(res.code))
   const raw = readResponse(res)
   debugLog('text', res, raw)
   return extractItems(raw, totalDays)
@@ -209,13 +210,14 @@ async function parseTripsVision(group, text, dataUrls) {
   dataUrls.forEach(function (u) {
     content.push({ type: 'image_url', image_url: { url: u } })
   })
+  // 注意：generateText 的参数就是请求体本身（不同于 streamText 的 { data } 包装）
   const res = await model.generateText({
-    data: {
-      model: VISION_MODEL,
-      max_tokens: 4096,
-      messages: [{ role: 'user', content: content }]
-    }
+    model: VISION_MODEL,
+    max_tokens: 4096,
+    messages: [{ role: 'user', content: content }]
   })
+  // 网关错误时 SDK 不抛异常而是返回错误体（如 {code, message}），主动抛出让上层提示
+  if (res && res.code) throw new Error(res.message || String(res.code))
   const raw = readResponse(res)
   debugLog('vision', res, raw)
   return extractItems(raw, totalDays)
