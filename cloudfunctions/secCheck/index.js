@@ -15,7 +15,8 @@ async function checkText(content, openid) {
       content: content
     })
     const suggest = res && res.result && res.result.suggest
-    return { pass: suggest === 'pass', reason: suggest || 'unknown' }
+    // review（疑似）放行：个人小范围自用场景只拦截明确违规 risky，避免误伤正常攻略
+    return { pass: suggest !== 'risky', reason: suggest || 'unknown' }
   } catch (e) {
     // 部分环境不支持 v2 签名，降级到 v1（违规会抛 87014）
     try {
@@ -51,7 +52,8 @@ async function checkImage(fileID, openid) {
       media: media
     })
     const suggest = res && res.result && res.result.suggest
-    return { pass: suggest === 'pass', reason: suggest || 'unknown' }
+    // review（疑似）放行：个人小范围自用场景只拦截明确违规 risky，避免误伤正常攻略截图
+    return { pass: suggest !== 'risky', reason: suggest || 'unknown' }
   } catch (e) {
     // 降级 v1（违规抛 87014）
     try {

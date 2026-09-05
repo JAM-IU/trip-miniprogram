@@ -144,7 +144,7 @@ Page({
           wx.hideLoading()
           wx.showModal({
             title: '内容未通过审核',
-            content: '这段文字包含不适合的内容，请修改后再试',
+            content: '这段文字被安全接口判定违规（' + ((r && r.reason) || 'unknown') + '），请修改后再试',
             showCancel: false
           })
           return
@@ -166,7 +166,7 @@ Page({
           wx.hideLoading()
           wx.showModal({
             title: '第 ' + (i + 1) + ' 张图未通过审核',
-            content: '这张截图包含不适合的内容，请删除后再试',
+            content: '这张截图被安全接口判定违规（' + ((r && r.reason) || 'unknown') + '）。攻略图里如有二维码、"加微信/私信"等字样容易触发，可裁剪掉或换一张纯行程内容的截图',
             showCancel: false
           })
           return
