@@ -201,7 +201,7 @@
   <view class="mask" wx:if="{{pack.show}}" bindtap="onClosePack">
     <view class="sheet pk-sheet" catchtap="noop">
       <view class="sheet-title">🎒 携带清单 · {{pack.doneCount}}/{{pack.totalCount}}</view>
-      <view class="pk-tip">点一下打勾，长按删除。高原早晚冷、紫外线强，厚外套和防晒别落下。</view>
+      <view class="pk-tip">点一下打勾，点右侧 ✕ 删除（长按也行）。高原早晚冷、紫外线强，厚外套和防晒别落下。</view>
 
       <scroll-view class="pk-scroll" scroll-y enhanced="true" show-scrollbar="{{false}}">
         <view class="pk-group" wx:for="{{pack.groups}}" wx:key="key" wx:for-item="g">
@@ -210,6 +210,7 @@
                 bindtap="onTogglePack" bindlongpress="onDelPack" data-id="{{p._id}}">
             <view class="pk-check {{p.done ? 'pk-check-on' : ''}}">{{p.done ? '✓' : ''}}</view>
             <text class="pk-text {{p.done ? 'pk-text-done' : ''}}">{{p.text}}</text>
+            <view class="pk-del" catchtap="onDelPack" data-id="{{p._id}}">✕</view>
           </view>
         </view>
       </scroll-view>
